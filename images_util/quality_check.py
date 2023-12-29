@@ -9,30 +9,42 @@ register_heif_opener()
 
 
 def process(session):
+    topiq_iaa = pyiqa.create_metric("topiq_iaa")
+    image_quality_df = pd.DataFrame(columns=["group", "image_name", "image_quality"])
+
+    def _is_valid_type(f):
+        try:
+            return guess_type(f)[0].startswith("image/")
+        except:
+            return False
+
     try:
-        images_to_check = []
-        for root, _, files in walk(f"./output/{session}/images"):
-            for file in files:
-                if guess_type(path.join(root, file))[0].startswith("image/"):
-                    images_to_check.append(path.join(root, file))
+        images_to_check = [
+            path.join(root, f)
+            for root, _, files in walk(f"./output/{session}/images")
+            for f in files
+            if _is_valid_type(path.join(root, f))
+        ]
 
-        topiq_iaa = pyiqa.create_metric("topiq_iaa")
-        image_quality_df = pd.DataFrame(
-            columns=["group", "image_name", "image_quality"]
-        )
+        for f in tqdm(images_to_check):
+            try:
+                image_quality_df.loc[len(image_quality_df.index)] = [
+                    f.split("/")[-2],
+                    f.split("/")[-1],
+                    topiq_iaa(f).item(),
+                ]
+            except AssertionError:
+                image_quality_df.loc[len(image_quality_df.index)] = [
+                    f.split("/")[-2],
+                    f.split("/")[-1],
+                    pd.NA,
+                ]
+                continue
 
-        for file in tqdm(images_to_check):
-            image_quality_df.loc[len(image_quality_df.index)] = [
-                file.split("/")[-2],
-                file.split("/")[-1],
-                topiq_iaa(file).item(),
-            ]
-
-        # save dataframe to excel
-        image_quality_df.to_excel(
-            f"./output/{session}/images/image_quality.xlsx", index=False
-        )
-    except AssertionError as e:
-        pass
     except Exception as e:
         raise e
+
+    # save dataframe to excel
+    image_quality_df.to_excel(
+        f"./output/{session}/images/image_quality.xlsx", index=False
+    )
