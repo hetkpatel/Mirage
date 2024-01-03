@@ -20,18 +20,23 @@ def process(session):
         for root, _, files in walk(batch[0]):
             for f in files:
                 f = path.join(root, f)
-                if guess_type(f)[0].startswith("image/"):
-                    img = Image.open(f)
-                    exif = img.getexif().get_ifd(0x8769)
-                    for tag, value in exif.items():
-                        if TAGS.get(tag) == "DateTimeOriginal":
-                            year = value[:4]
-                            if not path.exists(
-                                f"./output/{session}/images/{batch[1]}/{year}"
-                            ):
-                                makedirs(f"./output/{session}/images/{batch[1]}/{year}")
-                            move(
-                                f,
-                                f"./output/{session}/images/{batch[1]}/{year}/{path.basename(f)}",
-                            )
-                            break
+                try:
+                    if guess_type(f)[0].startswith("image/"):
+                        img = Image.open(f)
+                        exif = img.getexif().get_ifd(0x8769)
+                        for tag, value in exif.items():
+                            if TAGS.get(tag) == "DateTimeOriginal":
+                                year = value[:4]
+                                if not path.exists(
+                                    f"./output/{session}/images/{batch[1]}/{year}"
+                                ):
+                                    makedirs(
+                                        f"./output/{session}/images/{batch[1]}/{year}"
+                                    )
+                                move(
+                                    f,
+                                    f"./output/{session}/images/{batch[1]}/{year}/{path.basename(f)}",
+                                )
+                                break
+                except AttributeError:
+                    pass
