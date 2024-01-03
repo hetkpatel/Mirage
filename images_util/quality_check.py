@@ -19,14 +19,14 @@ def process(session):
             return False
 
     try:
-        images_to_check = [
-            path.join(root, f)
-            for root, _, files in walk(f"./output/{session}/images")
-            for f in files
-            if _is_valid_type(path.join(root, f))
-        ]
-
-        for f in tqdm(images_to_check):
+        for f in tqdm(
+            [
+                path.join(root, f)
+                for root, _, files in walk(f"./output/{session}/images")
+                for f in files
+                if _is_valid_type(path.join(root, f))
+            ]
+        ):
             try:
                 image_quality_df.loc[len(image_quality_df.index)] = [
                     f.split("/")[-2],
