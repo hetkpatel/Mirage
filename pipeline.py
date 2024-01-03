@@ -23,6 +23,7 @@ parser.add_argument(dest="dir", type=is_valid_path, nargs="+")
 parser.add_argument("--dry_run", "--dry", action="store_true")
 parser.add_argument("--show_unsupported_files", "-u", action="store_true")
 parser.add_argument("--quality_check", "-q", action="store_true")
+parser.add_argument("--order_by_date", "-o", action="store_true")
 
 args = parser.parse_args()
 
@@ -112,9 +113,10 @@ if not DRY_RUN_CHECK:
         qc.process(session=session)
         print("FINISH")
 
-    print("START: Order by Date")
-    od.process(session=session)
-    print("FINISH")
+    if args.order_by_date:
+        print("START: Order by Date")
+        od.process(session=session)
+        print("FINISH")
 
 
 rmtree(f"./.tmp")

@@ -1,4 +1,4 @@
-# LensLib
+# LensLib v0.1.2
 
 LensLib is a command-line utility designed to organize and process photos and videos in a specified directory or directories. The project provides functionalities such as duplicate detection, culling, and organization.
 
@@ -17,7 +17,8 @@ LensLib is a command-line utility designed to organize and process photos and vi
 #### Software
 
 - Python 3.x
-- Required Python packages: `torch`, `torchvision`, `Pillow`, `pillow_heif`, `pyiqa`, `mimetypes`, `argparse`, `uuid`, `tqdm` (all packages can be installed with `requirements.txt`)
+- Required Python packages: `torch`, `torchvision`, `Pillow`, `pillow_heif`, `pyiqa`, `mimetypes`, `argparse`, `uuid`, `tqdm`
+    - all packages can be installed with `requirements.txt`
 
 #### Hardware
 
@@ -39,7 +40,7 @@ $ pip install -r requirements.txt
 ### Run
 
 ```bash
-$ python pipeline.py [dir] [--dry_run] [--show_unsupported_files] [--quality_check]
+$ python pipeline.py [dir] [--dry_run] [--show_unsupported_files] [--quality_check] [--order_by_date]
 ```
 
 #### Arguments
@@ -52,10 +53,12 @@ $ python pipeline.py [dir] [--dry_run] [--show_unsupported_files] [--quality_che
 
 - `--quality_check` (`-q`): Enable image quality checking.
 
+- `--order_by_date` (`-o`): Enable image sort into sub-directories by date.
+
 ### Example
 
 ```bash
-$ python pipeline.py /path/to/images --dry_run --show_unsupported_files --quality_check
+$ python pipeline.py /path/to/images --dry_run --show_unsupported_files --quality_check --order_by_date
 ```
 
 ## Output
