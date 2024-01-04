@@ -1,3 +1,4 @@
+import torch
 import torchvision.models as models
 import torch.nn as nn
 
@@ -13,7 +14,7 @@ class ResNet50_ImageEmbedder(nn.Module):
         )
 
     def forward(self, x):
-        return self.model(x)
+        return torch.squeeze(self.model(x))
 
 
 def get_transforms():

@@ -7,7 +7,7 @@ from uuid import uuid4
 from json import load, dump
 from pillow_heif import register_heif_opener
 
-import ResNet50_Embedding as ie
+import embedding_models.ResNet50_Embedding as ie
 
 register_heif_opener()
 
