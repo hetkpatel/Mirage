@@ -1,14 +1,14 @@
-# LensLib v0.1.2
+# Project Mirage v0.1.2
 
-LensLib is a command-line utility designed to organize and process photos and videos in a specified directory or directories. The project provides functionalities such as duplicate detection, culling, and organization.
+Project Mirage is a command-line utility designed to organize and process photos and videos in a specified directory or directories. The project provides functionalities such as duplicate detection, culling, and organization.
 
 ## Features
 
-- **Photos and Videos**: LensLib can organize photos and videos. Works on multiple formats such as `JPEG`, `PNG`, `HEIC/HEIF` (iOS format), `MP4`, and `MOV`.
+- **Photos and Videos**: Mirage can organize photos and videos. Works on multiple formats such as `JPEG`, `PNG`, `HEIC/HEIF` (iOS format), `MP4`, and `MOV`.
 
 - **Duplicate Grouping**: Groups photos and videos based on specific criteria, enhancing the organization and accessibility of the files.
 
-- **Image Aesthetics Assessment**: Using Vision Neural Models, LensLibs can calculate which image from duplicates looks the best and cull them from the others.
+- **Image Aesthetics Assessment**: Using Vision Neural Models, Mirage can calculate which image from duplicates looks the best and cull them from the others.
 
 ## Usage
 
@@ -32,8 +32,8 @@ I ran this on a Raspberry Pi 4 8GB with a 128GB SD card running Raspbian with Py
 Clone the repository and install the required dependencies:
 
 ```bash
-$ git clone https://github.com/hetkpatel/LensLib.git
-$ cd LensLib
+$ git clone https://github.com/hetkpatel/Project-Mirage.git
+$ cd Project-Mirage
 $ pip install -r requirements.txt
 ```
 
@@ -45,7 +45,7 @@ $ python pipeline.py [dir] [--dry_run] [--show_unsupported_files] [--quality_che
 
 #### Arguments
 
-- `dir`: One or more directory paths containing the images and videos to be processed. LensLib will crawl through all sub-directories from the parent directory and find all photos and videos to process.
+- `dir`: One or more directory paths containing the images and videos to be processed. Mirage will crawl through all sub-directories from the parent directory and find all photos and videos to process.
 
 - `--dry_run` (`-d`): Perform a dry run without any modifications. Useful for previewing changes.
 
@@ -63,7 +63,7 @@ $ python pipeline.py /path/to/images --dry_run --show_unsupported_files --qualit
 
 ## Output
 
-LensLib generates an organized output structure in the current working directory:
+Mirage generates an organized output structure in the current working directory:
 
 - `./output/{session}/images`: Processed and grouped images.
   
@@ -71,7 +71,7 @@ LensLib generates an organized output structure in the current working directory
 
 ## CAUTION!!!
 
-Use caution when running LensLib without the `--dry_run` option, as it will modify files and directories. Always review the dry run output before proceeding with actual modifications.
+Use caution when running Mirage without the `--dry_run` option, as it will modify files and directories. Always review the dry run output before proceeding with actual modifications.
 
 ## License
 

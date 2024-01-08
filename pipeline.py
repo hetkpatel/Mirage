@@ -18,7 +18,7 @@ def is_valid_path(arg):
     return arg
 
 
-parser = ArgumentParser(prog="LensLib")
+parser = ArgumentParser(prog="Project Mirage")
 parser.add_argument(dest="dir", type=is_valid_path, nargs="+")
 parser.add_argument("--dry_run", "--dry", action="store_true")
 parser.add_argument("--show_unsupported_files", "-u", action="store_true")
