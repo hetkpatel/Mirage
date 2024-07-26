@@ -160,3 +160,4 @@ TEST/
 .tmp/
 output/
 *.ipynb
+*.pem
