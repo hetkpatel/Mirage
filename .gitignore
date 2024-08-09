@@ -154,10 +154,10 @@ cython_debug/
 
 # CUSTOM IGNORES
 .DS_Store
-dataset/
-reports/
+*dataset/
+*reports/
 TEST/
 .tmp/
-output/
+*output/
 *.ipynb
 *.pem
