@@ -27,6 +27,7 @@ def main():
     args = parser.parse_args()
 
     # Build list of images and videos
+    print(f"Walking directory: {args.dir}")
     # AVOID certain files/directories (e.g. .DS_Store)
     list_of_files = [
         path.join(root, file)
@@ -84,33 +85,34 @@ def main():
     del formats, unsupported_files, content
 
     # CHECK DRY RUN REQUIREMENT
-    DRY_RUN_CHECK = False
-    # DRY_RUN_CHECK = args.dry_run
-    # if not DRY_RUN_CHECK:
-    #     if (
-    #         input(
-    #             "\nWARNING: This is NOT a dry run. Continue? (Type CONTINUE to move forward, any key to cancel): "
-    #         )
-    #         .strip()
-    #         .lower()
-    #         != "continue"
-    #     ):
-    #         print("Canceling run...")
-    #         sys.exit(0)
-    #     else:
-    #         print(
-    #             "------------------------------------------------------\nDRY RUN MODE DISABLED: Files or directories WILL BE modified.\n------------------------------------------------------\n"
-    #         )
-    # else:
-    #     print(
-    #         "------------------------------------------------------\nDRY RUN MODE ENABLED: No files or directories will be modified.\n------------------------------------------------------\n"
-    #     )
+    # DRY_RUN_CHECK = False
+    DRY_RUN_CHECK = args.dry_run
+    if DRY_RUN_CHECK:
+        print(
+            "------------------------------------------------------\n"
+            + "DRY RUN MODE ENABLED: No files or directories will be modified.\n"
+            + "------------------------------------------------------\n"
+        )
+        sys.exit(0)
 
-    # if DRY_RUN_CHECK:
-    #     sys.exit(0)
+    if (
+        input(
+            "\nWARNING: This is NOT a dry run. Continue? (Type CONTINUE to move forward, any key to cancel): "
+        )
+        .strip()
+        .lower()
+        != "continue"
+    ):
+        print("Canceling run...")
+        sys.exit(0)
+    print(
+        "------------------------------------------------------\n"
+        + "DRY RUN MODE DISABLED: Files or directories WILL BE modified.\n"
+        + "------------------------------------------------------\n"
+    )
 
     # START ------------------------------------------------------
-    if not DRY_RUN_CHECK:  # Extra layer of safety
+    if not DRY_RUN_CHECK:  # Extra layer of check
         # Create session ID
         session = uuid4().hex
         print(f"\nSession ID: {session}\n")
@@ -138,6 +140,7 @@ def main():
             iemb.process(session=session, input=list_of_files)
             print("FINISH\n")
 
+            # Start Image Embedding
             print("START: Grouping Images")
             igrp.process(session=session)
             print("FINISH\n")

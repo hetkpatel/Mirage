@@ -41,14 +41,14 @@
             ]
         },
         {
-            "name": "Python: Video Test - Test 1",
+            "name": "Python: Full Scale Test",
             "type": "python",
             "request": "launch",
             "program": "./main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "./dataset/videos1/group1",
+                "./dataset/full-dataset/Unfiled Photos",
                 "-u"
             ]
         }
