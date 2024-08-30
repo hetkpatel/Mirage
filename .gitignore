@@ -161,3 +161,4 @@ TEST/
 *output/
 *.ipynb
 *.pem
+*.zip
