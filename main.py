@@ -18,7 +18,7 @@ def main():
             raise ArgumentTypeError(f"The path '{arg}' does not exist.")
         return arg
 
-    parser = ArgumentParser(prog="LensLib")
+    parser = ArgumentParser(prog="Project-Mirage")
     parser.add_argument(dest="dir", type=_is_valid_path, nargs="+")
     parser.add_argument("--dry_run", "--dry", action="store_true")
     parser.add_argument("--show_unsupported_files", "-u", action="store_true")
