@@ -39,7 +39,7 @@ def create_vector_for_video(video_file: str, embedding_folder: str):
         )
 
     try:
-        index = 0
+        embeddings = []
         for frame in iio.imiter(video_file, plugin="pyav"):
             model = ResNet50.ResNet50_ImageEmbedder()
             model.eval()
@@ -49,16 +49,16 @@ def create_vector_for_video(video_file: str, embedding_folder: str):
                 t = ResNet50.get_transforms()(img)
                 # Create embedding vector
                 embedding = torch.squeeze(model(t.unsqueeze(0)))
-                # Save embedding to folder
-                torch.save(
-                    embedding,
-                    path.join(
-                        embedding_folder,
-                        f"{path.basename(video_file).split('.')[0]}",
-                        f"{index}.pt",
-                    ),
-                )
-            index += 1
+                # Append embedding to list
+                embeddings.append(embedding)
+
+        # Save embeddings to folder
+        torch.save(
+            torch.mean(torch.stack(embeddings), dim=0),
+            path.join(
+                embedding_folder, f"{path.basename(video_file).split('.')[0]}.pt"
+            ),
+        )
     except Exception as e:
         print(e)
         return False

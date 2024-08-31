@@ -72,13 +72,13 @@ def find_similar_images(vector_folder, filename_mapping_json, media_folder, outp
 
 def _calculate_cosine_delta(target, batch):
     result = {target: 1.0}
-    target_tensor = tload(target).unsqueeze(dim=0)
+    target_tensor = tload(target, weights_only=True).unsqueeze(dim=0)
 
     for k in batch:
         if k != target:
-            cos_sim = cosine_similarity(target_tensor, tload(k).unsqueeze(dim=0))[
-                0
-            ].item()
+            cos_sim = cosine_similarity(
+                target_tensor, tload(k, weights_only=True).unsqueeze(dim=0)
+            )[0].item()
             if cos_sim >= THRESHOLD:
                 result[k] = cos_sim
 
