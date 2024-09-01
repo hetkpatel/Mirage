@@ -25,18 +25,8 @@ def create_vector_for_video(video_file: str, embedding_folder: str):
         print("Invalid video file")
         return False
 
-    if not path.exists(
-        path.join(
-            embedding_folder,
-            f"{path.basename(video_file).split('.')[0]}",
-        )
-    ):
-        makedirs(
-            path.join(
-                embedding_folder,
-                f"{path.basename(video_file).split('.')[0]}",
-            )
-        )
+    if not path.exists(embedding_folder):
+        makedirs(embedding_folder)
 
     try:
         embeddings = []

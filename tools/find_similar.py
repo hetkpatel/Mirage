@@ -2,13 +2,12 @@ from torch import load as tload
 from torch.nn.functional import cosine_similarity
 from json import dump, load
 from os import path, walk
-import pyiqa
 
 # .832104802131654 - resnet50
 THRESHOLD = 0.832104802131654
 
 
-def find_similar_images(vector_folder, filename_mapping_json, media_folder, output):
+def find_similar(vector_folder, filename_mapping_json, media_folder, output):
     clusters = {}
     files = [
         path.join(root, f) for root, _, files in walk(vector_folder) for f in files
@@ -41,8 +40,7 @@ def find_similar_images(vector_folder, filename_mapping_json, media_folder, outp
             checked.update(cluster)
 
     # save images to the .tmp/session folder in their respective groups
-    similarity_results = {}
-    topiq_iaa = pyiqa.create_metric("topiq_iaa")
+    similarity_results = []
     for _, similarImageEmbedIds in groups.items():
         imageList = []
         # Group similar images with real path
@@ -53,18 +51,7 @@ def find_similar_images(vector_folder, filename_mapping_json, media_folder, outp
                 path.join(media_folder, f"{id}.{org_path[0].split('.')[-1]}")
             )
 
-        # Find best quality image from group
-        best_quality_image = ""
-        best_quality = 0
-        for image in imageList:
-            quality = topiq_iaa(image).item()
-            if quality > best_quality:
-                best_quality_image = image
-                best_quality = quality
-
-        similarity_results[path.basename(best_quality_image)] = [
-            path.basename(i) for i in imageList
-        ]
+        similarity_results.append([path.basename(i) for i in imageList])
 
     with open(output, "w") as f:
         dump(similarity_results, f)

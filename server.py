@@ -13,7 +13,6 @@ import mimetypes
 from PIL import Image
 from pillow_heif import register_heif_opener
 import ffmpeg
-from time import strftime, localtime
 import threading
 
 
@@ -156,15 +155,21 @@ def process_media():
 
         pending += 1
 
-    current_file_in_process = ""
+    current_file_in_process = "Finding similar images and videos"
+    pending = 9
+    total = 10
 
     # TODO: perform duplication checks
-    find_similar_images(
+    find_similar(
         vector_folder=os.path.join(app.config["DRIVE_LOCATION"], "media", "VE"),
         filename_mapping_json=filename_mapping,
         media_folder=os.path.join(app.config["DRIVE_LOCATION"], "media", "media"),
         output=os.path.join(app.config["DRIVE_LOCATION"], "media", "similar.json"),
     )
+
+    current_file_in_process = ""
+    pending = 1
+    total = 1
 
     # create copy of 'media' folder stored elsewhere
     shutil.make_archive(
@@ -188,7 +193,7 @@ def start_process():
 @auth.login_required
 def process_status():
     global pending, total
-    progress = (pending / total) * 100
+    progress = ((pending / total) if total != 0 else 1) * 100
     return jsonify(
         {
             "progress": progress,
