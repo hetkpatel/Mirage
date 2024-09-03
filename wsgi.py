@@ -36,6 +36,7 @@ auth = HTTPBasicAuth()
 users = {"hetpatel": generate_password_hash(os.getenv("PASSWORD"))}
 
 
+# Authentication verification
 @auth.verify_password
 def verify_password(username, password):
     if username in users and check_password_hash(users.get(username), password):
@@ -63,14 +64,9 @@ os.makedirs(os.path.join(os.getenv("DRIVE_LOCATION"), "media", "media"), exist_o
 MAPPING_FILE = os.path.join(
     os.getenv("DRIVE_LOCATION"), "media", "filename_mapping.json"
 )
-# METADATA_FILE = os.path.join(os.getenv("DRIVE_LOCATION"), "media", "metadata.json")
-
 if not os.path.isfile(MAPPING_FILE):
     with open(MAPPING_FILE, "w") as f:
         json.dump({}, f)
-# if not os.path.isfile(METADATA_FILE):
-#     with open(METADATA_FILE, "w") as f:
-#         json.dump({}, f)
 
 
 # Save mappings to the JSON file
@@ -83,6 +79,7 @@ def save_dictionary(json_file, dictionary):
 with open(MAPPING_FILE, "r") as f:
     filename_mapping = json.load(f)
 
+# Import photo and video processing tools
 from tools.embedder import *
 from tools.extract_metadata import *
 from tools.find_similar import *
@@ -125,48 +122,35 @@ def upload_file():
         }, 201
 
 
-def process_media():
-    files = [
-        os.path.join(app.config["DRIVE_LOCATION"], "uploads", f)
-        for f in os.listdir(os.path.join(app.config["DRIVE_LOCATION"], "uploads"))
-    ]
+# Route to process media files
+def process_media(pull_uploads: bool):
     global pending, total, current_file_in_process
-    pending = 0
-    total = len(files)
-    for f in files:
-        current_file_in_process = os.path.basename(f)
-        # create embedding
-        create_vector(f, os.path.join(app.config["DRIVE_LOCATION"], "media", "VE"))
+    if pull_uploads:
+        files = [
+            os.path.join(app.config["DRIVE_LOCATION"], "uploads", f)
+            for f in os.listdir(os.path.join(app.config["DRIVE_LOCATION"], "uploads"))
+        ]
+        pending = 0
+        total = len(files)
+        for f in files:
+            current_file_in_process = os.path.basename(f)
+            # create embedding
+            create_vector(f, os.path.join(app.config["DRIVE_LOCATION"], "media", "VE"))
+            # TODO: extract metadata and save to json
+            # move file to media folder
+            shutil.move(f, os.path.join(app.config["DRIVE_LOCATION"], "media", "media"))
 
-        # # extract metadata
-        # file_meta = get_metadata(f)
-        # del file_meta["SourceFile"]
+            pending += 1
 
-        # TODO: FUTURE FEATURE: extract image quality score
-
-        # # Update metadata json file
-        # with open(METADATA_FILE, "r") as metafile:
-        #     metadata = json.load(metafile)
-        #     metadata[os.path.basename(f)] = file_meta
-        #     save_dictionary(METADATA_FILE, metadata)
-
-        # move file to media folder
-        shutil.move(f, os.path.join(app.config["DRIVE_LOCATION"], "media", "media"))
-
-        pending += 1
-
-    current_file_in_process = "Finding similar images and videos"
+    current_file_in_process = "SIMILAR"
     pending = 9
     total = 10
-
-    # TODO: perform duplication checks
     find_similar(
         vector_folder=os.path.join(app.config["DRIVE_LOCATION"], "media", "VE"),
         filename_mapping_json=filename_mapping,
         media_folder=os.path.join(app.config["DRIVE_LOCATION"], "media", "media"),
         output=os.path.join(app.config["DRIVE_LOCATION"], "media", "similar.json"),
     )
-
     current_file_in_process = ""
     pending = 1
     total = 1
@@ -177,11 +161,14 @@ def process_media():
     )
 
 
+# Route to start importing, tagging, and categorizing files
 @app.route("/start", methods=["POST"])
 @auth.login_required
 def start_process():
+    pull_uploads = request.args.get("pulluploads", "false").lower() == "true"
     # Start processing media as background task
-    thread = threading.Thread(target=process_media)
+    # thread = threading.Thread(target=process_media)
+    thread = threading.Thread(target=process_media, args=(pull_uploads,))
     thread.start()
 
     return {
@@ -189,6 +176,7 @@ def start_process():
     }, 202
 
 
+# Route to get the status of the processing
 @app.route("/status", methods=["GET"])
 @auth.login_required
 def process_status():
@@ -197,41 +185,28 @@ def process_status():
     return jsonify(
         {
             "progress": progress,
-            "current": filename_mapping.get(current_file_in_process),
+            "current": (
+                "Finding similar photos and videos"
+                if current_file_in_process == "SIMILAR"
+                else filename_mapping.get(current_file_in_process)
+            ),
         }
     ), (425 if progress < 100 else 200)
 
 
-# Route to start importing, tagging, and categorizing files
-@app.route("/start", methods=["POST"])
-@auth.login_required
-def start_processes():
-    # Implement the import logic here
-    return "Importing files...", 200
-
-
+# Generate a thumbnail for an image file
 def generate_image_thumbnail(file_bytes) -> bytes:
-    """
-    Generate a thumbnail for an image file.
-
-    :param file_bytes: Bytes of the image file.
-    :return: Thumbnail image as bytes.
-    """
     with Image.open(io.BytesIO(file_bytes)) as img:
         img.thumbnail((640, 640))
+        img.convert("RGB")
         img_io = io.BytesIO()
-        img.save(img_io, format=img.format)
+        img.save(img_io, format="JPEG")
         img_io.seek(0)
     return img_io.getvalue()
 
 
+# Extract a thumbnail from a video file and return it as bytes
 def generate_video_thumbnail(video_path: str) -> bytes:
-    """
-    Extract a thumbnail from a video file and return it as bytes.
-
-    :param video_path: Path to the video file.
-    :return: Thumbnail image as bytes.
-    """
     try:
         out, _ = (
             ffmpeg.input(video_path, ss=0.1)
@@ -245,14 +220,16 @@ def generate_video_thumbnail(video_path: str) -> bytes:
     return generate_image_thumbnail(out)
 
 
+# Route to download or get thumbnail of image or video
 @app.route("/download/<unique_id>", methods=["GET"])
-@auth.login_required
+# TODO: @auth.login_required
 def download_file(unique_id):
     # Check to see if unique_id is valid
     if len(unique_id) != 32:
         return {"status": "Invalid media ID"}, 400
 
     thumbnail = request.args.get("thumbnail", "false").lower() == "true"
+    downloadable = request.args.get("downloadable", "false").lower() == "true"
     for file_path in os.listdir(
         os.path.join(app.config["DRIVE_LOCATION"], "media", "media")
     ):
@@ -288,15 +265,26 @@ def download_file(unique_id):
                             content_type = "image/jpeg"
                         else:
                             return abort(415)
+                    elif not downloadable:
+                        if content_type.startswith("image/"):
+                            with Image.open(io.BytesIO(file_data)) as img:
+                                img.convert("RGB")
+                                img_io = io.BytesIO()
+                                img.save(img_io, format="JPEG")
+                                img_io.seek(0)
+                            file_data = img_io.getvalue()
+                            content_type = "image/jpeg"
+                        elif content_type.startswith("video/"):
+                            pass
+                        else:
+                            return abort(415)
 
                 return (
-                    # decrypted_data,
                     file_data,
                     200,
                     {
                         "Content-Type": content_type,
                         "Content-Disposition": f"attachment; filename={os.path.basename(original_filename)}",
-                        "X-Metadata": get_metadata(file_path),
                     },
                 )
             else:
@@ -323,7 +311,12 @@ def delete_file(unique_id):
             os.remove(file_path)
             filename_mapping.pop(os.path.basename(file_path), None)
             save_dictionary(MAPPING_FILE, filename_mapping)
-            # TODO: Delete vectors
+            # Delete vectors
+            os.remove(
+                os.path.join(
+                    app.config["DRIVE_LOCATION"], "media", "VE", unique_id + ".pt"
+                )
+            )
 
             return {"status": "Resource deleted"}, 202
 
@@ -337,18 +330,33 @@ def list():
     items = []
     dir_path = os.path.join(app.config["DRIVE_LOCATION"], "media", "media")
     for item in os.listdir(dir_path):
-        item_path = os.path.join(dir_path, item)
+        # item_path = os.path.join(dir_path, item)
         item_info = {
+            "id": item,
             "name": filename_mapping.get(item),
-            "size": os.path.getsize(item_path),
             "url": url_for(
                 "download_file", unique_id=item.split(".")[0], _external=True
             ),
             "mime_type": (mimetypes.guess_type(filename_mapping.get(item))[0]),
-            "metadata": get_metadata(item_path),
+            # TODO: SLOW (use json instead) "metadata": get_metadata(item_path),
         }
         items.append(item_info)
     return jsonify(items), 200
+
+
+# Route get similar.json file
+@app.route("/similar", methods=["GET"])
+@auth.login_required
+def get_similar_json():
+    try:
+        with open(
+            os.path.join(app.config["DRIVE_LOCATION"], "media", "similar.json")
+        ) as f:
+            return jsonify(json.load(f)), 200
+    except FileNotFoundError:
+        return {"status": "File not found"}, 404
+    except Exception as e:
+        return {"status": str(e)}, 500
 
 
 # Run app with HTTP
