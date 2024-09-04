@@ -1,9 +1,14 @@
 import requests
+from requests.auth import HTTPBasicAuth
+from requests_toolbelt.multipart.encoder import (
+    MultipartEncoder,
+    MultipartEncoderMonitor,
+)
 import os
 from mimetypes import guess_type
 from argparse import ArgumentParser, ArgumentTypeError
 from dotenv import load_dotenv
-import base64
+from tqdm import tqdm
 
 load_dotenv()
 
@@ -18,12 +23,10 @@ parser = ArgumentParser(prog="Project-Mirage")
 parser.add_argument(dest="dir", type=_is_valid_path, nargs="+")
 args = parser.parse_args()
 
-cred = f"hetpatel:{os.getenv('PASSWORD')}"
-
 
 def _is_image_or_video(file_path):
     mime_type, _ = guess_type(file_path)
-    return "image" in mime_type or "video" in mime_type
+    return False if mime_type is None else "image" in mime_type or "video" in mime_type
 
 
 list_of_files = [
@@ -35,28 +38,74 @@ list_of_files = [
     and _is_image_or_video(os.path.abspath(os.path.join(root, file)))
 ]
 
-for file in list_of_files:
-    post_files = {
-        "file": open(
-            file,
-            "rb",
-        ),
-    }
-    response = requests.request(
-        "POST",
-        "http://pico.local:5000/upload",
-        files=post_files,
-        headers={"Authorization": f"Basic: {base64.b64encode(cred.encode()).decode()}"},
+proceed = input(f"Uploading {len(list_of_files)} files. Proceed? (y/n) ")
+
+if proceed.lower() != "y":
+    exit()
+
+
+def create_multipart_with_progress(file_path, progress_bar):
+    """
+    Create a MultipartEncoderMonitor to track upload progress.
+    """
+    # Create a MultipartEncoder object
+    encoder = MultipartEncoder(
+        fields={
+            "file": (
+                os.path.basename(file_path),
+                open(file_path, "rb"),
+                "application/octet-stream",
+            )
+        }
     )
 
-    print(response.status_code)
-    print(response.text)
+    # Create a monitor for the encoder that updates the progress bar
+    monitor = MultipartEncoderMonitor(
+        encoder,
+        lambda monitor: progress_bar.update(monitor.bytes_read - progress_bar.n),
+    )
+
+    return monitor
+
+
+def upload_file(file_path):
+    """
+    Upload a single file to the server with a progress bar.
+    """
+    # Get the file size for progress tracking
+    file_size = os.path.getsize(file_path)
+
+    with tqdm(
+        total=file_size, unit="B", unit_scale=True, desc=os.path.basename(file_path)
+    ) as progress_bar:
+        # Create the MultipartEncoderMonitor for progress tracking
+        monitor = create_multipart_with_progress(file_path, progress_bar)
+
+        # Perform the file upload
+        response = requests.post(
+            "http://pico.local:5000/upload",
+            data=monitor,  # Pass the monitor as data
+            headers={"Content-Type": monitor.content_type},
+            auth=HTTPBasicAuth("hetpatel", os.getenv("PASSWORD")),
+        )
+
+    # Check if the upload was successful
+    if response.status_code != 201:
+        print(f"Failed to upload: {file_path} (Status code: {response.status_code})")
+
+
+for file in list_of_files:
+    try:
+        upload_file(file)
+    except Exception as e:
+        print(f"Error uploading {file}: {e}")
+        continue
 
 
 response = requests.request(
     "POST",
-    "http://pico.local:5000/start",
-    headers={"Authorization": f"Basic: {base64.b64encode(cred.encode()).decode()}"},
+    "http://pico.local:5000/start?pulluploads=true",
+    auth=HTTPBasicAuth("hetpatel", os.getenv("PASSWORD")),
 )
 
 print(response.status_code)
