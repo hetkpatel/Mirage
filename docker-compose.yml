@@ -1,0 +1,12 @@
+name: mirage
+services:
+  backend:
+    build: .
+    container_name: backend
+    ports:
+      - 1232:5000
+    volumes:
+      - ./data:/app/DRIVE
+      - ./zip:/app/zip
+    command: flask run
+    restart: unless-stopped

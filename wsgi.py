@@ -157,7 +157,9 @@ def process_media(pull_uploads: bool):
 
     # create copy of 'media' folder stored elsewhere
     shutil.make_archive(
-        "Mirage-Backup", "zip", os.path.join(app.config["DRIVE_LOCATION"], "media")
+        "./zip/Mirage-Backup",
+        "zip",
+        os.path.join(app.config["DRIVE_LOCATION"], "media"),
     )
 
 
