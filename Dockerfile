@@ -21,7 +21,3 @@ EXPOSE 5000
 # Define environment variable
 ENV FLASK_APP=wsgi.py
 ENV FLASK_RUN_HOST=0.0.0.0
-
-# Create a volume to attach storage
-VOLUME /app/data
-VOLUME /app/zip

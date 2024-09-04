@@ -4,9 +4,10 @@ services:
     build: .
     container_name: backend
     ports:
-      - 1232:5000
+      - 5000:5000
     volumes:
-      - ./data:/app/DRIVE
-      - ./zip:/app/zip
+      - ${DRIVE_LOCATION}:/app/DRIVE
+      - ./backup:/app/backup
+      - ./logs:/app/logs
+    env_file: .env
     command: flask run
-    restart: unless-stopped
