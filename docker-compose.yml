@@ -1,0 +1,13 @@
+name: mirage
+services:
+  backend:
+    build: .
+    container_name: backend
+    ports:
+      - 5000:5000
+    volumes:
+      - ${DRIVE_LOCATION}:/app/DRIVE
+      - ./backup:/app/backup
+      - ./logs:/app/logs
+    env_file: .env
+    command: flask run
