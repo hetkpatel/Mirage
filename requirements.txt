@@ -9,5 +9,8 @@ Pillow
 pillow-heif
 PyExifTool
 python-dotenv
-torch==2.5.0.dev20240827
-torchvision==0.20.0.dev20240827
+requests
+requests_toolbelt
+torch
+torchvision
+tqdm
