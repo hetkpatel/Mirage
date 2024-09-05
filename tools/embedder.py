@@ -9,6 +9,10 @@ import embedding_models.ResNet50_Embedding as ResNet50
 
 register_heif_opener()
 
+transform = ResNet50.get_transforms()
+model = ResNet50.ResNet50_ImageEmbedder()
+model.eval()
+
 
 def create_vector(file: str, embedding_folder: str):
     if guess_type(file)[0].startswith("image/"):
@@ -31,12 +35,10 @@ def create_vector_for_video(video_file: str, embedding_folder: str):
     try:
         embeddings = []
         for frame in iio.imiter(video_file, plugin="pyav"):
-            model = ResNet50.ResNet50_ImageEmbedder()
-            model.eval()
             with torch.no_grad():
                 # Transform images into tensors
                 img = Image.fromarray(frame)
-                t = ResNet50.get_transforms()(img)
+                t = transform(img)
                 # Create embedding vector
                 embedding = torch.squeeze(model(t.unsqueeze(0)))
                 # Append embedding to list
@@ -66,12 +68,10 @@ def create_vector_for_image(image_file: str, embedding_folder: str) -> bool:
         makedirs(embedding_folder)
 
     try:
-        model = ResNet50.ResNet50_ImageEmbedder()
-        model.eval()
         with torch.no_grad():
             # Transform images into tensors
             img = Image.open(image_file)
-            t = ResNet50.get_transforms()(img)
+            t = transform(img)
             # Create embedding vector
             embedding = torch.squeeze(model(t.unsqueeze(0)))
             # Save embedding to folder
