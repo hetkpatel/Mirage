@@ -8,6 +8,7 @@ WORKDIR /app
 ADD wsgi.py /app
 ADD embedding_models /app/embedding_models
 ADD tools /app/tools
+ADD .env /app
 ADD requirements.txt /app
 
 # Install ffmpeg
@@ -15,6 +16,7 @@ RUN apt update && apt full-upgrade -y
 RUN apt install ffmpeg -y && rm -rf /var/lib/apt/lists/*
 
 # Install any needed packages specified in requirements.txt
+ENV PIP_ROOT_USER_ACTION=ignore
 RUN pip install --no-cache-dir -U pip
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -22,12 +24,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 VOLUME /app/DRIVE /app/backup /app/logs
 
 # Make port available to the world outside this container
-EXPOSE ${PORT}
+EXPOSE 5000
 
 # Define environment variable
 ENV FLASK_APP=wsgi.py
 ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=${PORT}
+ENV FLASK_RUN_PORT=5000
 
 # Start flask server
 CMD ["flask", "run"]
