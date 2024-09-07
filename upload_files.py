@@ -68,6 +68,10 @@ def create_multipart_with_progress(file_path, progress_bar):
     return monitor
 
 
+HOSTNAME = os.getenv("HOSTNAME")
+PORT = os.getenv("PORT")
+
+
 def upload_file(file_path):
     """
     Upload a single file to the server with a progress bar.
@@ -83,7 +87,7 @@ def upload_file(file_path):
 
         # Perform the file upload
         response = requests.post(
-            "http://pico.local:5000/upload",
+            f"http://{HOSTNAME}:{PORT}/upload",
             data=monitor,  # Pass the monitor as data
             headers={"Content-Type": monitor.content_type},
             auth=HTTPBasicAuth("hetpatel", os.getenv("PASSWORD")),
@@ -104,7 +108,7 @@ for file in list_of_files:
 
 response = requests.request(
     "POST",
-    "http://pico.local:5000/start?pulluploads=true",
+    f"http://{HOSTNAME}:{PORT}/start?pulluploads=true",
     auth=HTTPBasicAuth("hetpatel", os.getenv("PASSWORD")),
 )
 

@@ -401,6 +401,7 @@ def list_files():
             "url": url_for(
                 "download_file", unique_id=item.split(".")[0], _external=True
             ),
+            # TODO: SLOW (use json instead) "metadata": get_metadata(item_path),
             "mime_type": mimetypes.guess_type(filename_mapping.get(item))[0],
         }
         items.append(item_info)
@@ -430,4 +431,4 @@ def get_similar_json():
 # Run app with HTTP
 if __name__ == "__main__":
     logger.info("Starting Flask server...")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=os.getenv("PORT"), debug=True)
