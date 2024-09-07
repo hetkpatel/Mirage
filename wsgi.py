@@ -246,14 +246,18 @@ def process_status():
 
 # Generate a thumbnail for an image file
 def generate_image_thumbnail(file_bytes) -> bytes:
-    with Image.open(io.BytesIO(file_bytes)) as img:
-        img.thumbnail((640, 640))
-        img.convert("RGB")
-        img_io = io.BytesIO()
-        img.save(img_io, format="JPEG")
-        img_io.seek(0)
-    logger.info("Generated image thumbnail.")
-    return img_io.getvalue()
+    try:
+        with Image.open(io.BytesIO(file_bytes)) as img:
+            img.thumbnail((640, 640))
+            img.convert("RGB")
+            img_io = io.BytesIO()
+            img.save(img_io, format="JPEG")
+            img_io.seek(0)
+        logger.info("Generated image thumbnail.")
+        return img_io.getvalue()
+    except Exception as e:
+        logger.error(f"Unexpected error generating image thumbnail: {e}")
+        return abort(500)
 
 
 # Extract a thumbnail from a video file and return it as bytes
@@ -265,11 +269,13 @@ def generate_video_thumbnail(video_path: str) -> bytes:
             .run(capture_stdout=True, capture_stderr=True)
         )
         logger.info("Generated video thumbnail.")
+        return generate_image_thumbnail(out)
     except ffmpeg.Error as e:
         logger.error(f"Error generating video thumbnail: {e.stderr}")
         return abort(500)
-
-    return generate_image_thumbnail(out)
+    except Exception as e:
+        logger.error(f"Unexpected error generating video thumbnail: {e}")
+        return abort(500)
 
 
 # Route to download or get thumbnail of image or video
