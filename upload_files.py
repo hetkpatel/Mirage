@@ -80,7 +80,11 @@ def upload_file(file_path):
     file_size = os.path.getsize(file_path)
 
     with tqdm(
-        total=file_size, unit="B", unit_scale=True, desc=os.path.basename(file_path)
+        total=file_size,
+        unit="B",
+        unit_scale=True,
+        desc=os.path.basename(file_path),
+        leave=False,
     ) as progress_bar:
         # Create the MultipartEncoderMonitor for progress tracking
         monitor = create_multipart_with_progress(file_path, progress_bar)
@@ -98,7 +102,7 @@ def upload_file(file_path):
         print(f"Failed to upload: {file_path} (Status code: {response.status_code})")
 
 
-for file in list_of_files:
+for file in tqdm(list_of_files, desc="Uploading", unit="files"):
     try:
         upload_file(file)
     except Exception as e:
