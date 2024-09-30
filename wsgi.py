@@ -93,11 +93,11 @@ os.makedirs(os.path.join(app.config["DRIVE_LOCATION"], "media", "media"), exist_
 MAPPING_FILE = os.path.join(
     app.config["DRIVE_LOCATION"], "media", "filename_mapping.json"
 )
-METADATA_FILE = os.path.join(app.config["DRIVE_LOCATION"], "media", "metadata.json")
 if not os.path.isfile(MAPPING_FILE):
     with open(MAPPING_FILE, "w") as f:
         json.dump({}, f)
     logger.info("Created new filename_mapping.json file.")
+METADATA_FILE = os.path.join(app.config["DRIVE_LOCATION"], "media", "metadata.json")
 if not os.path.isfile(METADATA_FILE):
     with open(METADATA_FILE, "w") as f:
         json.dump({}, f)
@@ -117,6 +117,7 @@ logger.info("Loaded filename mappings from JSON file.")
 with open(METADATA_FILE, "r") as f:
     metadata = json.load(f)
 logger.info("Loaded metadata from JSON file.")
+
 
 # Import photo and video processing tools
 from tools.embedder import *
