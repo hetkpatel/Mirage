@@ -162,4 +162,6 @@ TEST/
 *.ipynb
 *.pem
 *.zip
-logs/
+container/
+dev/
+update_metadata.py

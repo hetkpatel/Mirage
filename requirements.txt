@@ -1,4 +1,5 @@
 av
+blurhash-python
 ffmpeg-python
 Flask
 Flask-Cors

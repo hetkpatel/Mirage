@@ -20,7 +20,7 @@ def _is_valid_path(arg):
 
 
 parser = ArgumentParser(prog="Project-Mirage")
-parser.add_argument(dest="dir", type=_is_valid_path, nargs="+")
+parser.add_argument(dest="dir", type=_is_valid_path)
 args = parser.parse_args()
 
 

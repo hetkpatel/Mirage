@@ -2,7 +2,6 @@ import torch
 import imageio.v3 as iio
 from PIL import Image
 from os import path, makedirs
-from mimetypes import guess_type
 from pillow_heif import register_heif_opener
 
 import embedding_models.ResNet50_Embedding as ResNet50
@@ -14,21 +13,16 @@ model = ResNet50.ResNet50_ImageEmbedder()
 model.eval()
 
 
-def create_vector(file: str, embedding_folder: str):
-    if guess_type(file)[0].startswith("image/"):
-        return create_vector_for_image(file, embedding_folder)
-    elif guess_type(file)[0].startswith("video/"):
-        return create_vector_for_video(file, embedding_folder)
+def create_embedding(file: str, embedding_folder: str, mimetype: str):
+    if mimetype.startswith("image/"):
+        return _create_embedding_for_image(file, embedding_folder)
+    elif mimetype.startswith("video/"):
+        return _create_embedding_for_video(file, embedding_folder)
     else:
         return False
 
 
-def create_vector_for_video(video_file: str, embedding_folder: str):
-    # Check if image_file is actually an image file using mime
-    if not guess_type(video_file)[0].startswith("video/"):
-        print("Invalid video file")
-        return False
-
+def _create_embedding_for_video(video_file: str, embedding_folder: str):
     if not path.exists(embedding_folder):
         makedirs(embedding_folder)
 
@@ -58,12 +52,7 @@ def create_vector_for_video(video_file: str, embedding_folder: str):
     return True
 
 
-def create_vector_for_image(image_file: str, embedding_folder: str) -> bool:
-    # Check if image_file is actually an image file using mime
-    if not guess_type(image_file)[0].startswith("image/"):
-        print("Invalid image file")
-        return False
-
+def _create_embedding_for_image(image_file: str, embedding_folder: str) -> bool:
     if not path.exists(embedding_folder):
         makedirs(embedding_folder)
 
