@@ -1,7 +1,7 @@
 services:
   mirage-server:
     image: mirage-server
-    restart: unless-stopped
+    container_name: mirage-server
     environment:
       - WORKING_DIRECTORY=/app
     ports:
@@ -10,3 +10,13 @@ services:
       - ${DRIVE_LOCATION}:/app/DRIVE
       - ./container/backup/:/app/backup
       - ./container/logs/:/app/logs
+    restart: unless-stopped
+  
+  mirage-client:
+    image: mirage-client
+    container_name: mirage-client
+    ports:
+      - "80:80"
+    depends_on:
+      - mirage-server
+    restart: unless-stopped
