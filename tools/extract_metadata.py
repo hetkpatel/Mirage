@@ -15,6 +15,7 @@ def get_metadata(id_file_path: str, org_filename: str) -> dict:
         metadata = et.get_tags(
             [id_file_path],
             tags=[
+                "File:FileSize",
                 "File:MIMEType",
                 "File:ImageWidth",
                 "File:ImageHeight",
@@ -38,6 +39,7 @@ def get_metadata(id_file_path: str, org_filename: str) -> dict:
 
         del metadata["SourceFile"]
 
+        metadata["FileSize"] = metadata.pop("File:FileSize")
         metadata["MIMEType"] = metadata.pop("File:MIMEType")
 
         if "File:ImageWidth" in metadata:

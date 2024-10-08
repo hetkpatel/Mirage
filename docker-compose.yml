@@ -1,0 +1,12 @@
+services:
+  mirage-server:
+    image: mirage-server
+    restart: unless-stopped
+    environment:
+      - WORKING_DIRECTORY=/app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ${DRIVE_LOCATION}:/app/DRIVE
+      - ./container/backup/:/app/backup
+      - ./container/logs/:/app/logs

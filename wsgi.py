@@ -1,21 +1,22 @@
 import io
+import json
+import logging
 import os
 import shutil
-import logging
-from logging.handlers import RotatingFileHandler
-from dotenv import load_dotenv
+import threading
 import uuid
-import json
+from datetime import datetime, timedelta
+from logging.handlers import RotatingFileHandler
 import blurhash
-from flask import Flask, request, abort, url_for, jsonify
+import ffmpeg
+from dotenv import load_dotenv
+from flask import Flask, abort, jsonify, request, url_for
 from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 from PIL import Image
 from pillow_heif import register_heif_opener
-import ffmpeg
-import threading
+from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 # Load .env file
 load_dotenv()
@@ -102,6 +103,11 @@ if not os.path.isfile(METADATA_FILE):
     with open(METADATA_FILE, "w") as f:
         json.dump({}, f)
     logger.info("Created new metadata.json file.")
+TRASH_FILE = os.path.join(app.config["DRIVE_LOCATION"], "media", "trash.json")
+if not os.path.isfile(TRASH_FILE):
+    with open(TRASH_FILE, "w") as f:
+        json.dump({}, f)
+    logger.info("Created new trash.json file.")
 
 
 # Save mappings to the JSON file
@@ -117,9 +123,12 @@ logger.info("Loaded filename mappings from JSON file.")
 with open(METADATA_FILE, "r") as f:
     metadata = json.load(f)
 logger.info("Loaded metadata from JSON file.")
+with open(TRASH_FILE, "r") as f:
+    trash = json.load(f)
+logger.info("Loaded trash from JSON file.")
 
 
-# Import photo and video processing tools
+# Import processing tools
 from tools.embedder import *
 from tools.extract_metadata import *
 from tools.find_similar import *
@@ -407,65 +416,32 @@ def download_file(unique_id):
                 return abort(404)
 
 
-# Route to delete files
-@app.route("/delete/<unique_id>", methods=["DELETE"])
-@auth.login_required
-def delete_file(unique_id):
-    logger.info(f"Delete request for file with unique_id: {unique_id}")
-
-    if len(unique_id) != 32:
-        logger.warning("Invalid media ID received.")
-        return {"status": "Invalid media ID"}, 400
-
-    for file_path in os.listdir(
-        os.path.join(app.config["DRIVE_LOCATION"], "media", "media")
-    ):
-        if file_path.startswith(unique_id):
-            file_path = os.path.join(
-                app.config["DRIVE_LOCATION"], "media", "media", file_path
-            )
-
-            os.remove(file_path)
-            filename_mapping.pop(os.path.basename(file_path), None)
-            save_dictionary(MAPPING_FILE, filename_mapping)
-            os.remove(
-                os.path.join(
-                    app.config["DRIVE_LOCATION"],
-                    "media",
-                    "embeddings",
-                    unique_id + ".pt",
-                )
-            )
-
-            logger.info(f"File {file_path} and its associated data deleted.")
-            return {"status": "Resource deleted"}, 202
-
-    logger.info("Resource not found. No action taken.")
-    return {"status": "Resource not found. No action taken."}, 204
-
-
 # Route to list files and folders with metadata
 @app.route("/list", methods=["GET"])
 @auth.login_required
 def list_files():
     logger.info("List request received.")
-
-    items = []
-    dir_path = os.path.join(app.config["DRIVE_LOCATION"], "media", "media")
-    for item in os.listdir(dir_path):
-        item_info = {
-            "id": item,
-            "name": filename_mapping.get(item),
-            "url": url_for(
-                "download_file", unique_id=item.split(".")[0], _external=True
-            ),
-            "metadata": metadata.get(item),
-            "mime_type": metadata.get(item).get("MIMEType"),
-        }
-        items.append(item_info)
-
-    logger.info(f"{len(items)} items listed.")
-    return jsonify(items), 200
+    logger.info(f"{len(filename_mapping) - len(trash)} items listed.")
+    return (
+        jsonify(
+            [
+                {
+                    "id": item[:32],
+                    "name": filename_mapping.get(item),
+                    "url": url_for(
+                        "download_file", unique_id=item[:32], _external=True
+                    ),
+                    "metadata": metadata.get(item),
+                }
+                for item in filename_mapping
+                if os.path.exists(
+                    os.path.join(app.config["DRIVE_LOCATION"], "media", "media", item)
+                )
+                and item not in trash
+            ]
+        ),
+        200,
+    )
 
 
 # Route get similar.json file
@@ -484,6 +460,60 @@ def get_similar_json():
     except Exception as e:
         logger.error(f"Error retrieving similar.json: {str(e)}")
         return {"status": str(e)}, 500
+
+
+# Route get trash.json file
+@app.route("/trash", methods=["GET"])
+@auth.login_required
+def get_trash_json():
+    return (
+        jsonify(
+            [
+                {
+                    "id": id[:32],
+                    "name": filename_mapping.get(id),
+                    "url": url_for("download_file", unique_id=id[:32], _external=True),
+                    "metadata": metadata.get(id),
+                    "expiry": expiry,
+                }
+                for id, expiry in trash.items()
+                if os.path.exists(
+                    os.path.join(app.config["DRIVE_LOCATION"], "media", "media", id)
+                )
+            ]
+        ),
+        200,
+    )
+
+
+# Route trash a file
+@app.route("/trash/<unique_id>", methods=["POST"])
+@auth.login_required
+def trash_file(unique_id):
+    logger.info(f"Trash request for file with unique_id: {unique_id}")
+
+    if len(unique_id) != 32:
+        logger.warning("Invalid media ID received.")
+        return {"status": "Invalid media ID"}, 400
+
+    for file_path in os.listdir(
+        os.path.join(app.config["DRIVE_LOCATION"], "media", "media")
+    ):
+        if file_path.startswith(unique_id):
+            if file_path in trash:
+                logger.info("Removing file from trash")
+                trash.pop(file_path)
+            else:
+                logger.info("Adding file to trash")
+                trash[file_path] = (
+                    datetime.now().replace(hour=23, minute=59) + timedelta(days=30)
+                ).strftime("%Y-%m-%d %H:%M:00")
+            save_dictionary(TRASH_FILE, trash)
+
+            return {"status": "Complete"}, 200
+
+    logger.info("Resource not found. No action taken.")
+    return {"status": "Resource not found. No action taken."}, 204
 
 
 @app.route("/usage", methods=["GET"])
