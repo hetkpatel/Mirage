@@ -31,8 +31,7 @@ def _is_image_or_video(file_path):
 
 list_of_files = [
     os.path.abspath(os.path.join(root, file))
-    for d in args.dir
-    for root, _, files in os.walk(d)
+    for root, _, files in os.walk(args.dir)
     for file in files
     if file not in [".DS_Store"]
     and _is_image_or_video(os.path.abspath(os.path.join(root, file)))
