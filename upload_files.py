@@ -5,7 +5,7 @@ from requests_toolbelt.multipart.encoder import (
     MultipartEncoderMonitor,
 )
 import os
-from mimetypes import guess_type
+import exiftool
 from argparse import ArgumentParser, ArgumentTypeError
 from dotenv import load_dotenv
 from tqdm import tqdm
@@ -23,18 +23,23 @@ parser = ArgumentParser(prog="Project-Mirage")
 parser.add_argument(dest="dir", type=_is_valid_path)
 args = parser.parse_args()
 
-
-def _is_image_or_video(file_path):
-    mime_type, _ = guess_type(file_path)
-    return False if mime_type is None else "image" in mime_type or "video" in mime_type
-
-
 list_of_files = [
     os.path.abspath(os.path.join(root, file))
     for root, _, files in os.walk(args.dir)
     for file in files
-    if file not in [".DS_Store"]
-    and _is_image_or_video(os.path.abspath(os.path.join(root, file)))
+    if file not in [".DS_Store", "Thumbs.db"]
+]
+
+with exiftool.ExifToolHelper() as et:
+    metadata = et.get_tags(
+        list_of_files,
+        tags=["File:MIMEType"],
+    )
+
+list_of_files = [
+    meta["SourceFile"]
+    for meta in metadata
+    if "image" in meta["File:MIMEType"] or "video" in meta["File:MIMEType"]
 ]
 
 proceed = input(f"Uploading {len(list_of_files)} files. Proceed? (y/n) ")
