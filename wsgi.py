@@ -5,6 +5,7 @@ import os
 import shutil
 import threading
 import uuid
+import requests as r
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 import blurhash
@@ -133,6 +134,8 @@ from tools.embedder import *
 from tools.extract_metadata import *
 from tools.find_similar import *
 
+logger.info("READY")
+
 
 # Route to check if the server is running
 @app.route("/")
@@ -182,7 +185,7 @@ def upload_file():
 # Route to process media files
 def process_media(pull_uploads: bool):
     global pending, total, processing_similar_bool
-    logger.info("Started processing media.".upper())
+    logger.info("STARTED PROCESSING MEDIA")
 
     if pull_uploads:
         files = [
@@ -243,8 +246,8 @@ def process_media(pull_uploads: bool):
 
     # Unload Gemma2-MDE model
     logger.info(f"Unload MDE model")
-    requests.post(
-        "http://localhost:11434/api/generate",
+    r.post(
+        "http://ollama:11434/api/generate",
         json={"model": "Gemma2-MDE", "keep_alive": 0},
     )
 
@@ -270,7 +273,7 @@ def process_media(pull_uploads: bool):
         os.path.join(app.config["DRIVE_LOCATION"], "media"),
     )
     logger.info("Created backup archive of the media folder.")
-    logger.info("Finished processing media.".upper())
+    logger.info("FINISHED PROCESSING MEDIA")
 
 
 # Route to start importing, tagging, and categorizing files

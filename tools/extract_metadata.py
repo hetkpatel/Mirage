@@ -98,7 +98,7 @@ def get_metadata(id_file_path: str, org_filename: str) -> dict:
 
         if "CreateDate" not in metadata:
             response = requests.post(
-                "http://localhost:11434/api/generate",
+                "http://ollama:11434/api/generate",
                 json={
                     "model": "Gemma2-MDE",
                     "stream": False,

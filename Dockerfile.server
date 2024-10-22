@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.12.4-slim-bookworm
+FROM python:3.12.7-slim-bookworm
 
 # Set the working directory in the container
 WORKDIR /app
@@ -11,9 +11,9 @@ ADD tools /app/tools
 ADD .env /app
 ADD requirements.txt /app
 
-# Install ffmpeg
+# Install ffmpeg and exiftool
 RUN apt update && apt full-upgrade -y
-RUN apt install ffmpeg -y && rm -rf /var/lib/apt/lists/*
+RUN apt install ffmpeg libimage-exiftool-perl -y && rm -rf /var/lib/apt/lists/*
 
 # Install any needed packages specified in requirements.txt
 ENV PIP_ROOT_USER_ACTION=ignore
