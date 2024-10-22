@@ -218,9 +218,9 @@ def process_media(pull_uploads: bool):
                     )
                     with Image.open(io.BytesIO(out)) as img:
                         img.thumbnail((640, 640))
-                        img.convert("RGB")
+                        rgb_v = img.convert("RGB")
                         metadata[os.path.basename(f)]["BlurHash"] = blurhash.encode(
-                            img, x_components=4, y_components=3
+                            rgb_v, x_components=4, y_components=3
                         )
                 except ffmpeg.Error as e:
                     print(e)
@@ -309,18 +309,18 @@ def process_status():
 
 
 # Generate a thumbnail for an image file
-def generate_image_thumbnail(file_bytes) -> bytes:
+def generate_image_thumbnail(image_bytes, image_name="NULL") -> bytes:
     try:
-        with Image.open(io.BytesIO(file_bytes)) as img:
+        with Image.open(io.BytesIO(image_bytes)) as img:
             img.thumbnail((640, 640))
-            img.convert("RGB")
+            rgb_v = img.convert("RGB")
             img_io = io.BytesIO()
-            img.save(img_io, format="JPEG")
+            rgb_v.save(img_io, format="JPEG")
             img_io.seek(0)
         logger.info("Generated image thumbnail.")
         return img_io.getvalue()
     except Exception as e:
-        logger.error(f"Unexpected error generating image thumbnail: {e}")
+        logger.error(f"Unexpected error generating image thumbnail: {image_name}: {e}")
         return abort(500)
 
 
@@ -335,10 +335,10 @@ def generate_video_thumbnail(video_path: str) -> bytes:
         logger.info("Generated video thumbnail.")
         return generate_image_thumbnail(out)
     except ffmpeg.Error as e:
-        logger.error(f"Error generating video thumbnail: {e.stderr}")
+        logger.error(f"Error generating video thumbnail: {video_path}: {e.stderr}")
         return abort(500)
     except Exception as e:
-        logger.error(f"Unexpected error generating video thumbnail: {e}")
+        logger.error(f"Unexpected error generating video thumbnail: {video_path}: {e}")
         return abort(500)
 
 
@@ -378,7 +378,9 @@ def download_file(unique_id):
                     if thumbnail:
                         if content_type.startswith("image/"):
                             logger.info("Generating thumbnail for image file.")
-                            file_data = generate_image_thumbnail(file_data)
+                            file_data = generate_image_thumbnail(
+                                file_data, os.path.basename(file_path)
+                            )
                             content_type = "image/jpeg"
                         elif content_type.startswith("video/"):
                             logger.info("Generating thumbnail for video file.")
@@ -393,9 +395,9 @@ def download_file(unique_id):
                         logger.info("Serving JPEG version of full res file")
                         if content_type.startswith("image/"):
                             with Image.open(io.BytesIO(file_data)) as img:
-                                img.convert("RGB")
+                                rgb_v = img.convert("RGB")
                                 img_io = io.BytesIO()
-                                img.save(img_io, format="JPEG")
+                                rgb_v.save(img_io, format="JPEG")
                                 img_io.seek(0)
                             file_data = img_io.getvalue()
                             content_type = "image/jpeg"
@@ -417,6 +419,9 @@ def download_file(unique_id):
             else:
                 logger.error(f"File not found: {file_path}")
                 return abort(404)
+
+    logger.warning(f"File ID not found: {unique_id}")
+    return abort(404)
 
 
 # Route to list files and folders with metadata
