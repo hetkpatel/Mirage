@@ -26,29 +26,41 @@ load_dotenv()
 WORKING_DIRECTORY = os.getenv("WORKING_DIRECTORY")
 
 # Configure logging
-# Create a rotating file handler
 os.makedirs(os.path.join(WORKING_DIRECTORY, "logs"), exist_ok=True)
-file_handler = RotatingFileHandler(
-    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "mirage.log"),
+hosting = logging.getLogger("Mirage [H]")
+processing = logging.getLogger("Mirage [P]")
+
+hosting.setLevel(logging.DEBUG)
+processing.setLevel(logging.DEBUG)
+
+# Create a rotating file handler for hosting
+hosting_handler = RotatingFileHandler(
+    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "hosting.log"),
     maxBytes=10**6,
     backupCount=5,
-)  # 1MB per file, 5 backups
-file_handler.setLevel(logging.DEBUG)
-
-# Define a log format
-file_handler.setFormatter(
+)
+hosting_handler.setFormatter(
     logging.Formatter(
         "%(asctime)s %(name)s %(levelname)s :: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 )
+hosting_handler.setLevel(logging.DEBUG)
+hosting.addHandler(hosting_handler)
 
-# Get the root logger and set the overall level
-logger = logging.getLogger("Mirage")
-logger.setLevel(logging.DEBUG)  # This controls the overall logging level
-
-# Add handlers to the root logger
-logger.addHandler(file_handler)
+processing_handler = RotatingFileHandler(
+    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "processing.log"),
+    maxBytes=10**6,
+    backupCount=5,
+)
+processing_handler.setFormatter(
+    logging.Formatter(
+        "%(asctime)s %(name)s %(levelname)s :: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+)
+processing_handler.setLevel(logging.DEBUG)
+processing.addHandler(processing_handler)
 
 # Register HEIF opener
 register_heif_opener()
@@ -71,9 +83,7 @@ users = {"hetpatel": generate_password_hash(os.getenv("PASSWORD"))}
 @auth.verify_password
 def verify_password(username, password):
     if username in users and check_password_hash(users.get(username), password):
-        logger.info(f"User {username} authenticated successfully.")
         return username
-    logger.warning(f"Authentication failed for user {username}.")
     return None
 
 
@@ -98,17 +108,17 @@ MAPPING_FILE = os.path.join(
 if not os.path.isfile(MAPPING_FILE):
     with open(MAPPING_FILE, "w") as f:
         json.dump({}, f)
-    logger.info("Created new filename_mapping.json file.")
+    processing.info("Created new filename_mapping.json file.")
 METADATA_FILE = os.path.join(app.config["DRIVE_LOCATION"], "media", "metadata.json")
 if not os.path.isfile(METADATA_FILE):
     with open(METADATA_FILE, "w") as f:
         json.dump({}, f)
-    logger.info("Created new metadata.json file.")
+    processing.info("Created new metadata.json file.")
 TRASH_FILE = os.path.join(app.config["DRIVE_LOCATION"], "media", "trash.json")
 if not os.path.isfile(TRASH_FILE):
     with open(TRASH_FILE, "w") as f:
         json.dump({}, f)
-    logger.info("Created new trash.json file.")
+    processing.info("Created new trash.json file.")
 
 
 # Save mappings to the JSON file
@@ -120,13 +130,13 @@ def save_dictionary(json_file, dictionary):
 # Initialize the dictionaries
 with open(MAPPING_FILE, "r") as f:
     filename_mapping = json.load(f)
-logger.info("Loaded filename mappings from JSON file.")
+processing.info("Loaded filename mappings from JSON file.")
 with open(METADATA_FILE, "r") as f:
     metadata = json.load(f)
-logger.info("Loaded metadata from JSON file.")
+processing.info("Loaded metadata from JSON file.")
 with open(TRASH_FILE, "r") as f:
     trash = json.load(f)
-logger.info("Loaded trash from JSON file.")
+processing.info("Loaded trash from JSON file.")
 
 
 # Import processing tools
@@ -134,13 +144,13 @@ from tools.embedder import *
 from tools.extract_metadata import *
 from tools.find_similar import *
 
-logger.info("READY")
+processing.info("READY")
 
 
 # Route to check if the server is running
 @app.route("/")
 def index():
-    logger.info("Health check - Server is running.")
+    processing.info("Health check - Server is running.")
     return "Server is running!", 200
 
 
@@ -149,11 +159,11 @@ def index():
 @auth.login_required
 def upload_file():
     if "file" not in request.files:
-        logger.warning("No file part in the request.")
+        hosting.warning("No file part in the request.")
         return "No file part", 400
     file = request.files["file"]
     if file.filename == "":
-        logger.warning("No file selected for upload.")
+        hosting.warning("No file selected for upload.")
         return "No selected file", 400
     if file:
         original_filename = secure_filename(file.filename)
@@ -167,14 +177,14 @@ def upload_file():
         # Save the file
         with open(file_path, "wb") as f:
             f.write(file.read())
-        logger.info(
+        hosting.info(
             f"File {original_filename} uploaded and saved as {unique_filename}."
         )
 
         # Update the mapping and save it to the JSON file
         filename_mapping[unique_filename] = original_filename
         save_dictionary(MAPPING_FILE, filename_mapping)
-        logger.info(f"Filename mapping for {unique_filename} saved.")
+        processing.info(f"Filename mapping for {unique_filename} saved.")
 
         return {
             "status": "Resource uploaded",
@@ -185,7 +195,7 @@ def upload_file():
 # Route to process media files
 def process_media(pull_uploads: bool):
     global pending, total, processing_similar_bool
-    logger.info("STARTED PROCESSING MEDIA")
+    processing.info("STARTED PROCESSING MEDIA")
 
     if pull_uploads:
         files = [
@@ -194,11 +204,11 @@ def process_media(pull_uploads: bool):
         ]
         pending = 0
         total = len(files)
-        logger.info(f"Found {total} files to process.")
+        processing.info(f"Found {total} files to process.")
 
         for f in files:
             current_file_in_process = os.path.basename(f)
-            logger.info(f"Processing file {current_file_in_process}.")
+            processing.info(f"Processing file {current_file_in_process}.")
             # Create metadata
             metadata[os.path.basename(f)] = get_metadata(
                 f, filename_mapping[os.path.basename(f)]
@@ -240,12 +250,12 @@ def process_media(pull_uploads: bool):
             # Move file to media folder
             shutil.move(f, os.path.join(app.config["DRIVE_LOCATION"], "media", "media"))
             pending += 1
-            logger.info(
+            processing.info(
                 f"File {current_file_in_process} processed and moved to media folder."
             )
 
     # Unload Gemma2-MDE model
-    logger.info(f"Unload MDE model")
+    processing.info(f"Unload MDE model")
     r.post(
         "http://ollama:11434/api/generate",
         json={"model": "Gemma2-MDE", "keep_alive": 0},
@@ -254,14 +264,14 @@ def process_media(pull_uploads: bool):
     processing_similar_bool = True
     pending = 99
     total = 100
-    logger.info("Finding similar photos and videos.")
+    processing.info("Finding similar photos and videos.")
     find_similar(
         vector_folder=os.path.join(app.config["DRIVE_LOCATION"], "media", "embeddings"),
         filename_mapping_json=filename_mapping,
         media_folder=os.path.join(app.config["DRIVE_LOCATION"], "media", "media"),
         output=os.path.join(app.config["DRIVE_LOCATION"], "media", "similar.json"),
     )
-    logger.info("Similar photos and videos process completed.")
+    processing.info("Similar photos and videos process completed.")
     processing_similar_bool = False
     pending = 1
     total = 1
@@ -272,8 +282,8 @@ def process_media(pull_uploads: bool):
         "zip",
         os.path.join(app.config["DRIVE_LOCATION"], "media"),
     )
-    logger.info("Created backup archive of the media folder.")
-    logger.info("FINISHED PROCESSING MEDIA")
+    processing.info("Created backup archive of the media folder.")
+    processing.info("FINISHED PROCESSING MEDIA")
 
 
 # Route to start importing, tagging, and categorizing files
@@ -281,11 +291,11 @@ def process_media(pull_uploads: bool):
 @auth.login_required
 def start_process():
     pull_uploads = request.args.get("pulluploads", "false").lower() == "true"
-    logger.info(f"Received request to start process. pull_uploads={pull_uploads}")
+    processing.info(f"Received request to start process. pull_uploads={pull_uploads}")
 
     thread = threading.Thread(target=process_media, args=(pull_uploads,))
     thread.start()
-    logger.info("Background processing thread started.")
+    processing.info("Background processing thread started.")
 
     return {
         "status": url_for("process_status", _external=True),
@@ -298,7 +308,7 @@ def start_process():
 def process_status():
     global pending, total
     progress = (pending / total) if total != 0 else 1
-    logger.info(f"Status requested. Progress: {progress}%")
+    hosting.info(f"Status requested. Progress: {progress}%")
 
     return jsonify(
         {
@@ -317,10 +327,10 @@ def generate_image_thumbnail(image_bytes, image_name="NULL") -> bytes:
             img_io = io.BytesIO()
             rgb_v.save(img_io, format="JPEG")
             img_io.seek(0)
-        logger.info("Generated image thumbnail.")
+        hosting.info("Generated image thumbnail.")
         return img_io.getvalue()
     except Exception as e:
-        logger.error(f"Unexpected error generating image thumbnail: {image_name}: {e}")
+        hosting.error(f"Unexpected error generating image thumbnail: {image_name}: {e}")
         return abort(500)
 
 
@@ -332,13 +342,13 @@ def generate_video_thumbnail(video_path: str) -> bytes:
             .output("pipe:", vframes=1, format="image2", vcodec="png")
             .run(capture_stdout=True, capture_stderr=True)
         )
-        logger.info("Generated video thumbnail.")
+        hosting.info("Generated video thumbnail.")
         return generate_image_thumbnail(out)
     except ffmpeg.Error as e:
-        logger.error(f"Error generating video thumbnail: {video_path}: {e.stderr}")
+        hosting.error(f"Error generating video thumbnail: {video_path}: {e.stderr}")
         return abort(500)
     except Exception as e:
-        logger.error(f"Unexpected error generating video thumbnail: {video_path}: {e}")
+        hosting.error(f"Unexpected error generating video thumbnail: {video_path}: {e}")
         return abort(500)
 
 
@@ -346,10 +356,10 @@ def generate_video_thumbnail(video_path: str) -> bytes:
 @app.route("/download/<unique_id>", methods=["GET"])
 # TODO: @auth.login_required
 def download_file(unique_id):
-    logger.info(f"Download request for file with unique_id: {unique_id}")
+    hosting.info(f"Download request for file with unique_id: {unique_id}")
 
     if len(unique_id) != 32:
-        logger.warning("Invalid media ID received.")
+        hosting.warning("Invalid media ID received.")
         return {"status": "Invalid media ID"}, 400
 
     thumbnail = request.args.get("thumbnail", "false").lower() == "true"
@@ -364,7 +374,7 @@ def download_file(unique_id):
             ):
                 original_filename = filename_mapping.get(file_path)
                 if not original_filename:
-                    logger.error(f"Original filename not found for file: {file_path}")
+                    hosting.error(f"Original filename not found for file: {file_path}")
                     return abort(404)
 
                 file_path = os.path.join(
@@ -377,22 +387,22 @@ def download_file(unique_id):
 
                     if thumbnail:
                         if content_type.startswith("image/"):
-                            logger.info("Generating thumbnail for image file.")
+                            hosting.info("Generating thumbnail for image file.")
                             file_data = generate_image_thumbnail(
                                 file_data, os.path.basename(file_path)
                             )
                             content_type = "image/jpeg"
                         elif content_type.startswith("video/"):
-                            logger.info("Generating thumbnail for video file.")
+                            hosting.info("Generating thumbnail for video file.")
                             file_data = generate_video_thumbnail(file_path)
                             content_type = "image/jpeg"
                         else:
-                            logger.warning(
+                            hosting.warning(
                                 f"Unsupported content type for thumbnail: {content_type}"
                             )
                             return abort(415)
                     elif not downloadable:
-                        logger.info("Serving JPEG version of full res file")
+                        hosting.info("Serving JPEG version of full res file")
                         if content_type.startswith("image/"):
                             with Image.open(io.BytesIO(file_data)) as img:
                                 rgb_v = img.convert("RGB")
@@ -404,10 +414,10 @@ def download_file(unique_id):
                         elif content_type.startswith("video/"):
                             pass
                         else:
-                            logger.warning(f"Unsupported content type: {content_type}")
+                            hosting.warning(f"Unsupported content type: {content_type}")
                             return abort(415)
 
-                logger.info(f"File {original_filename} served for download.")
+                hosting.info(f"File {original_filename} served for download.")
                 return (
                     file_data,
                     200,
@@ -417,10 +427,10 @@ def download_file(unique_id):
                     },
                 )
             else:
-                logger.error(f"File not found: {file_path}")
+                hosting.error(f"File not found: {file_path}")
                 return abort(404)
 
-    logger.warning(f"File ID not found: {unique_id}")
+    hosting.warning(f"File ID not found: {unique_id}")
     return abort(404)
 
 
@@ -428,8 +438,8 @@ def download_file(unique_id):
 @app.route("/list", methods=["GET"])
 @auth.login_required
 def list_files():
-    logger.info("List request received.")
-    logger.info(f"{len(filename_mapping) - len(trash)} items listed.")
+    hosting.info("List request received.")
+    hosting.info(f"{len(filename_mapping) - len(trash)} items listed.")
     return (
         jsonify(
             [
@@ -460,20 +470,22 @@ def get_similar_json():
         with open(
             os.path.join(app.config["DRIVE_LOCATION"], "media", "similar.json")
         ) as f:
-            logger.info("Returning similar.json file.")
+            hosting.info("Returning similar.json file.")
             return jsonify(json.load(f)), 200
     except FileNotFoundError:
-        logger.warning("similar.json file not found.")
+        hosting.warning("similar.json file not found.")
         return {"status": "File not found"}, 404
     except Exception as e:
-        logger.error(f"Error retrieving similar.json: {str(e)}")
+        hosting.error(f"Error retrieving similar.json: {str(e)}")
         return {"status": str(e)}, 500
 
 
 # Route get trash.json file
 @app.route("/trash", methods=["GET"])
 @auth.login_required
-def get_trash_json():
+def get_trash():
+    hosting.info("Trash request received.")
+    hosting.info(f"Return {len(trash)} items.")
     return (
         jsonify(
             [
@@ -498,10 +510,10 @@ def get_trash_json():
 @app.route("/trash/<unique_id>", methods=["POST"])
 @auth.login_required
 def trash_file(unique_id):
-    logger.info(f"Trash request for file with unique_id: {unique_id}")
+    hosting.info(f"Trash request for file with unique_id: {unique_id}")
 
     if len(unique_id) != 32:
-        logger.warning("Invalid media ID received.")
+        hosting.warning("Invalid media ID received.")
         return {"status": "Invalid media ID"}, 400
 
     for file_path in os.listdir(
@@ -509,10 +521,10 @@ def trash_file(unique_id):
     ):
         if file_path.startswith(unique_id):
             if file_path in trash:
-                logger.info("Removing file from trash")
+                hosting.info("Removing file from trash")
                 trash.pop(file_path)
             else:
-                logger.info("Adding file to trash")
+                hosting.info("Adding file to trash")
                 trash[file_path] = (
                     datetime.now().replace(hour=23, minute=59) + timedelta(days=30)
                 ).strftime("%Y-%m-%d %H:%M:00")
@@ -520,7 +532,7 @@ def trash_file(unique_id):
 
             return {"status": "Complete"}, 200
 
-    logger.info("Resource not found. No action taken.")
+    hosting.info("Resource not found. No action taken.")
     return {"status": "Resource not found. No action taken."}, 204
 
 
@@ -546,5 +558,5 @@ def storage_usage():
 
 # Run app with HTTP
 if __name__ == "__main__":
-    logger.info("Starting Flask server...")
+    processing.info("Debug Flask server...")
     app.run(host="0.0.0.0", port=os.getenv("PORT"), debug=True)
