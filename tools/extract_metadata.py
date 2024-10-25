@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 
 
-def get_metadata(id_file_path: str, org_filename: str) -> dict:
+def get_metadata(id_file_path: str, org_filename: str, ollama_host: str) -> dict:
     def is_valid_date_format(date_string):
         try:
             datetime.strptime(date_string, "%Y:%m:%d")
@@ -98,7 +98,7 @@ def get_metadata(id_file_path: str, org_filename: str) -> dict:
 
         if "CreateDate" not in metadata:
             response = requests.post(
-                "http://ollama:11434/api/generate",
+                f"http://{ollama_host}:11434/api/generate",
                 json={
                     "model": "Gemma2-MDE",
                     "stream": False,

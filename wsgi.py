@@ -138,6 +138,9 @@ with open(TRASH_FILE, "r") as f:
     trash = json.load(f)
 processing.info("Loaded trash from JSON file.")
 
+# Set Ollama host
+ollama_host = "ollama"
+
 
 # Import processing tools
 from tools.embedder import *
@@ -211,7 +214,9 @@ def process_media(pull_uploads: bool):
             processing.info(f"Processing file {current_file_in_process}.")
             # Create metadata
             metadata[os.path.basename(f)] = get_metadata(
-                f, filename_mapping[os.path.basename(f)]
+                id_file_path=f,
+                org_filename=filename_mapping[os.path.basename(f)],
+                ollama_host=ollama_host,
             )
 
             content_type = metadata[os.path.basename(f)]["MIMEType"]
@@ -257,7 +262,7 @@ def process_media(pull_uploads: bool):
     # Unload Gemma2-MDE model
     processing.info(f"Unload MDE model")
     r.post(
-        "http://ollama:11434/api/generate",
+        f"http://{ollama_host}:11434/api/generate",
         json={"model": "Gemma2-MDE", "keep_alive": 0},
     )
 
@@ -558,5 +563,6 @@ def storage_usage():
 
 # Run app with HTTP
 if __name__ == "__main__":
+    ollama_host = "localhost"
     processing.info("Debug Flask server...")
     app.run(host="0.0.0.0", port=os.getenv("PORT"), debug=True)
