@@ -6,6 +6,7 @@ Flask-Cors
 Flask-HTTPAuth
 imageio
 numpy
+ollama
 Pillow
 pillow-heif
 PyExifTool

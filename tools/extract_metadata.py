@@ -1,9 +1,9 @@
 import exiftool
-import requests
+import ollama
 from datetime import datetime
 
 
-def get_metadata(id_file_path: str, org_filename: str, ollama_host: str) -> dict:
+def get_metadata(id_file_path: str, org_filename: str) -> dict:
     def is_valid_date_format(date_string):
         try:
             datetime.strptime(date_string, "%Y:%m:%d")
@@ -97,22 +97,18 @@ def get_metadata(id_file_path: str, org_filename: str, ollama_host: str) -> dict
         metadata.pop("QuickTime:MediaModifyDate", None)
 
         if "CreateDate" not in metadata:
-            response = requests.post(
-                f"http://{ollama_host}:11434/api/generate",
-                json={
-                    "model": "Gemma2-MDE",
-                    "stream": False,
-                    "prompt": org_filename,
-                },
+            response = ollama.generate(
+                model="Gemma2-MDE",
+                prompt=org_filename,
             )
             if (
-                response.json()["done"]
-                and str(response.json()["done_reason"]).strip().lower() == "stop"
-                and str(response.json()["response"]).strip() != "null"
-                and is_valid_date_format(str(response.json()["response"]).strip())
+                response["done"]
+                and str(response["done_reason"]).strip().lower() == "stop"
+                and str(response["response"]).strip() != "null"
+                and is_valid_date_format(str(response["response"]).strip())
             ):
                 metadata["CreateDate"] = datetime.strptime(
-                    str(response.json()["response"]).strip(), "%Y:%m:%d"
+                    str(response["response"]).strip(), "%Y:%m:%d"
                 ).strftime("%Y:%m:%d 00:00:00")
             else:
                 metadata["CreateDate"] = datetime.now().strftime("%Y:%m:%d 00:00:00")

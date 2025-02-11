@@ -1,7 +1,3 @@
-networks:
-  mirage_network:
-    driver: bridge
-
 services:
   mirage-server:
     image: mirage-server
@@ -14,31 +10,4 @@ services:
       - ${DRIVE_LOCATION}:/app/DRIVE
       - ./container/backup/:/app/backup
       - ./container/logs/:/app/logs
-    depends_on:
-      - ollama
     restart: unless-stopped
-    networks:
-      - mirage_network
-
-  ollama:
-    image: ollama/ollama
-    container_name: ollama
-    ports:
-      - 11435:11434
-    volumes:
-      - ollama:/root/.ollama
-    networks:
-      - mirage_network
-    restart: unless-stopped
-
-  mirage-client:
-    image: mirage-client
-    container_name: mirage-client
-    ports:
-      - 80:80
-    depends_on:
-      - mirage-server
-    restart: unless-stopped
-
-volumes:
-  ollama:
