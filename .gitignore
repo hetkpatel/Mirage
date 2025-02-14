@@ -165,4 +165,3 @@ TEST/
 container/
 dev/
 update_metadata.py
-Dockerfile.client

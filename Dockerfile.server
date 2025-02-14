@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -U pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Define volume to be mounted
-VOLUME /app/DRIVE /app/backup /app/logs
+VOLUME /mirage/DRIVE /mirage/backup /mirage/logs
 
 # Make port available to the world outside this container
 EXPOSE 5000

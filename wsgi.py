@@ -22,11 +22,8 @@ from werkzeug.utils import secure_filename
 # Load .env file
 load_dotenv()
 
-# Set working directory
-WORKING_DIRECTORY = os.getenv("WORKING_DIRECTORY")
-
 # Configure logging
-os.makedirs(os.path.join(WORKING_DIRECTORY, "logs"), exist_ok=True)
+os.makedirs("/mirage/logs", exist_ok=True)
 hosting = logging.getLogger("Mirage [H]")
 processing = logging.getLogger("Mirage [P]")
 
@@ -35,7 +32,7 @@ processing.setLevel(logging.DEBUG)
 
 # Create a rotating file handler for hosting
 hosting_handler = RotatingFileHandler(
-    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "hosting.log"),
+    os.path.join("/mirage/logs", "hosting.log"),
     maxBytes=10**6,
     backupCount=5,
 )
@@ -49,7 +46,7 @@ hosting_handler.setLevel(logging.DEBUG)
 hosting.addHandler(hosting_handler)
 
 processing_handler = RotatingFileHandler(
-    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "processing.log"),
+    os.path.join("/mirage/logs", "processing.log"),
     maxBytes=10**6,
     backupCount=5,
 )
@@ -76,7 +73,7 @@ processing_similar_bool = False
 
 # Authentication setup
 auth = HTTPBasicAuth()
-users = {"hetpatel": generate_password_hash(os.getenv("PASSWORD"))}
+users = {os.getenv("USERNAME"): generate_password_hash(os.getenv("PASSWORD"))}
 
 
 # Authentication verification
@@ -87,7 +84,7 @@ def verify_password(username, password):
     return None
 
 
-app.config["DRIVE_LOCATION"] = os.path.join(WORKING_DIRECTORY, "DRIVE")
+app.config["DRIVE_LOCATION"] = "/mirage/DRIVE"
 os.makedirs(os.path.join(app.config["DRIVE_LOCATION"], "uploads"), exist_ok=True)
 os.makedirs(os.path.join(app.config["DRIVE_LOCATION"], "media", "media"), exist_ok=True)
 
@@ -271,7 +268,7 @@ def process_media(pull_uploads: bool):
 
     # Create copy of 'media' folder stored elsewhere
     shutil.make_archive(
-        os.path.join(WORKING_DIRECTORY, "backup", "Mirage-Backup"),
+        os.path.join("/mirage/backup", "Mirage-Backup"),
         "zip",
         os.path.join(app.config["DRIVE_LOCATION"], "media"),
     )
