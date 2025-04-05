@@ -3,6 +3,7 @@ import imageio.v3 as iio
 from PIL import Image
 from os import path, makedirs
 from pillow_heif import register_heif_opener
+from mirage_logger import ProcessingLoggerSingleton
 
 import embedding_models.ResNet50_Embedding as ResNet50
 
@@ -14,6 +15,9 @@ model.eval()
 
 
 def create_embedding(file: str, embedding_folder: str, mimetype: str):
+    processing = ProcessingLoggerSingleton().get_logger()
+    processing.info(f"Creating embedding for {file}...")
+
     if mimetype.startswith("image/"):
         return _create_embedding_for_image(file, embedding_folder)
     elif mimetype.startswith("video/"):

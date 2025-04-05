@@ -1,13 +1,12 @@
 import io
 import json
-import logging
+from mirage_logger import HostingLoggerSingleton, ProcessingLoggerSingleton
 import os
 import shutil
 import threading
 import uuid
 import requests as r
 from datetime import datetime, timedelta
-from logging.handlers import RotatingFileHandler
 import blurhash
 import ffmpeg
 from dotenv import load_dotenv
@@ -22,45 +21,10 @@ from werkzeug.utils import secure_filename
 # Load .env file
 load_dotenv()
 
-# Set working directory
-WORKING_DIRECTORY = os.getenv("WORKING_DIRECTORY")
-
 # Configure logging
-os.makedirs(os.path.join(WORKING_DIRECTORY, "logs"), exist_ok=True)
-hosting = logging.getLogger("Mirage [H]")
-processing = logging.getLogger("Mirage [P]")
-
-hosting.setLevel(logging.DEBUG)
-processing.setLevel(logging.DEBUG)
-
-# Create a rotating file handler for hosting
-hosting_handler = RotatingFileHandler(
-    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "hosting.log"),
-    maxBytes=10**6,
-    backupCount=5,
-)
-hosting_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s %(name)s %(levelname)s :: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-)
-hosting_handler.setLevel(logging.DEBUG)
-hosting.addHandler(hosting_handler)
-
-processing_handler = RotatingFileHandler(
-    os.path.join(os.path.join(WORKING_DIRECTORY, "logs"), "processing.log"),
-    maxBytes=10**6,
-    backupCount=5,
-)
-processing_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s %(name)s %(levelname)s :: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-)
-processing_handler.setLevel(logging.DEBUG)
-processing.addHandler(processing_handler)
+os.makedirs("/mirage/logs", exist_ok=True)
+hosting = HostingLoggerSingleton().get_logger()
+processing = ProcessingLoggerSingleton().get_logger()
 
 # Register HEIF opener
 register_heif_opener()
@@ -76,7 +40,7 @@ processing_similar_bool = False
 
 # Authentication setup
 auth = HTTPBasicAuth()
-users = {"hetpatel": generate_password_hash(os.getenv("PASSWORD"))}
+users = {os.getenv("USERNAME"): generate_password_hash(os.getenv("PASSWORD"))}
 
 
 # Authentication verification
@@ -87,7 +51,7 @@ def verify_password(username, password):
     return None
 
 
-app.config["DRIVE_LOCATION"] = os.path.join(WORKING_DIRECTORY, "DRIVE")
+app.config["DRIVE_LOCATION"] = "/mirage/DRIVE"
 os.makedirs(os.path.join(app.config["DRIVE_LOCATION"], "uploads"), exist_ok=True)
 os.makedirs(os.path.join(app.config["DRIVE_LOCATION"], "media", "media"), exist_ok=True)
 
@@ -199,6 +163,7 @@ def upload_file():
 def process_media(pull_uploads: bool):
     global pending, total, processing_similar_bool
     processing.info("STARTED PROCESSING MEDIA")
+    processing.info(f"Pull uploads: {pull_uploads}")
 
     if pull_uploads:
         files = [
@@ -259,11 +224,11 @@ def process_media(pull_uploads: bool):
                 f"File {current_file_in_process} processed and moved to media folder."
             )
 
-    # Unload Gemma2-MDE model
-    processing.info(f"Unload MDE model")
+    # Unload mirage-date-extractor model
+    processing.info(f"Unload mirage-date-extractor model")
     r.post(
         f"http://{ollama_host}:11434/api/generate",
-        json={"model": "Gemma2-MDE", "keep_alive": 0},
+        json={"model": "mirage-date-extractor", "keep_alive": 0},
     )
 
     processing_similar_bool = True
@@ -283,7 +248,7 @@ def process_media(pull_uploads: bool):
 
     # Create copy of 'media' folder stored elsewhere
     shutil.make_archive(
-        os.path.join(WORKING_DIRECTORY, "backup", "Mirage-Backup"),
+        os.path.join("/mirage/backup", "Mirage-Backup"),
         "zip",
         os.path.join(app.config["DRIVE_LOCATION"], "media"),
     )

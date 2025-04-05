@@ -1,78 +1,113 @@
-# Project Mirage v0.1.2
+# Mirage
 
-Project Mirage is a command-line utility designed to organize and process photos and videos in a specified directory or directories. The project provides functionalities such as duplicate detection, culling, and organization.
+## Overview
 
-## Features
+**Mirage** offers a self-hosted and privacy-focused photo storage and management solution. It provides robust capabilities comparable to cloud-based solutions while ensuring that users maintain full control over their data.
 
-- **Photos and Videos**: Mirage can organize photos and videos. Works on multiple formats such as `JPEG`, `PNG`, `HEIC/HEIF` (iOS format), `MP4`, and `MOV`.
+## Architecture
 
-- **Duplicate Grouping**: Groups photos and videos based on specific criteria, enhancing the organization and accessibility of the files.
+Mirage is a two-part system consisting of:
 
-- **Image Aesthetics Assessment**: Using Vision Neural Models, Mirage can calculate which image from duplicates looks the best and cull them from the others.
+- **Backend (Server)**: A Flask-based API that handles image and video processing, metadata extraction, duplicate detection, and search functionality. The backend is responsible for executing AI-driven tasks and storing processed results.
+- **Frontend (Client)**: A web-based interface that allows users to interact with their media, create albums, search, tag, and manage files easily. The client connects to the backend via API requests.
 
-## Usage
+Both components can be deployed using the `docker-compose.yml` file which is the recommended method of installation.
 
-### Prerequisites
+### Capabilities
 
-#### Software
+- **Face Recognition**: Automatically detects and categorizes individuals in images. see #6
+- **Albums**: Organize photos and videos into structured albums. see #7
+- **Duplicate Detection**: Identifies and groups visually similar media. see #8
+- **Metadata Extraction**: Retrieves and displays EXIF and other metadata. see #9
+- **Search & Filtering**: Quickly find photos based on people, dates, locations, or tags. see #10
+- **Local AI Processing**: Performs image analysis without relying on external servers.
+- **Tagging & Annotations**: Users can add descriptions, keywords, and comments to media files. see #11
 
-- Python 3.x
-- Required Python packages: `torch`, `torchvision`, `Pillow`, `pillow_heif`, `pyiqa`, `mimetypes`, `argparse`, `uuid`, `tqdm`
-    - all packages can be installed with `requirements.txt`
+## Under the Hood
 
-#### Hardware
+### **Duplicate Detection**
 
-- At least 4GB of memory for vector embeddings
-- Capable processor for vision models (CNNs like ResNet or VGG19)
+Mirage utilizes deep learning models to generate vector embeddings for images. These embeddings represent unique visual features, enabling Mirage to compare images efficiently and detect duplicates.
 
-I ran this on a Raspberry Pi 4 8GB with a 128GB SD card running Raspbian with Python 3.11.2 without any issues.
+### **Metadata Extraction**
 
-### Installation
+Mirage  extracts detailed metadata from images and videos, including camera settings, geolocation, timestamps, and other embedded properties. This metadata enhances searchability and allows users to organize media based on relevant attributes.
 
-Clone the repository and install the required dependencies:
+### **Security and Authentication**
 
-```bash
-$ git clone https://github.com/hetkpatel/Project-Mirage.git
-$ cd Project-Mirage
-$ pip install -r requirements.txt
-```
+Mirage's backend, built with Flask, ensures secure access to media using basic authentication and HTTPS support. see #12
 
-### Run
+### **Logging and Monitoring**
 
-```bash
-$ python pipeline.py [dir] [--dry_run] [--show_unsupported_files] [--quality_check] [--order_by_date]
-```
+The system implements  logging for server events, ensuring that error tracking and system monitoring are efficient. Logs are stored and rotated periodically to maintain system performance.
 
-#### Arguments
+### **Scalability with Docker**
 
-- `dir`: One or more directory paths containing the images and videos to be processed. Mirage will crawl through all sub-directories from the parent directory and find all photos and videos to process.
+Mirage is designed to be containerized using Docker, allowing for easy deployment and scaling. By running the backend and frontend in separate containers, users can ensure better performance and isolation of processes.
 
-- `--dry_run` (`-d`): Perform a dry run without any modifications. Useful for previewing changes.
+## Installation
 
-- `--show_unsupported_files` (`-u`): Display unsupported files during execution.
+### Recommended: Running with Docker
 
-- `--quality_check` (`-q`): Enable image quality checking.
+The preferred method for deploying Mirage is using Docker, which ensures consistency and ease of deployment.
 
-- `--order_by_date` (`-o`): Enable image sort into sub-directories by date.
+1. Clone the repository:
 
-### Example
+   ```bash
+   git clone https://github.com/hetkpatel/Mirage.git
+   cd Mirage
+   ```
 
-```bash
-$ python pipeline.py /path/to/images --dry_run --show_unsupported_files --quality_check --order_by_date
-```
+2. Create a copy of the `example.env` file and rename it to `.env`.
 
-## Output
+   ```bash
+   cp example.env .env
+   ```
 
-Mirage generates an organized output structure in the current working directory:
+3. Edit the `.env` variables
 
-- `./output/{session}/images`: Processed and grouped images.
-  
-- `./output/{session}/videos`: Processed and grouped videos.
+4. Run the containers using Docker Compose:
 
-## CAUTION!!!
+   ```bash
+   docker compose up -d
+   ```
 
-Use caution when running Mirage without the `--dry_run` option, as it will modify files and directories. Always review the dry run output before proceeding with actual modifications.
+This will start both the backend and frontend containers, making the server accessible at `http://localhost:5000`, and the website at `http://localhost:80`.
+
+### Alternative: Running with Python (server only)
+
+If you prefer to run Mirage without Docker, follow these steps:
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/hetkpatel/Mirage.git
+   cd Mirage
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the Flask server:
+
+   ```bash
+   python wsgi.py
+   ```
+
+This will **ONLY START** the server on `http://localhost:5000`.
+
+## Hardware Recommendations
+
+- At least 8GB RAM for embedding computations.
+- A modern 4-core processor to handle AI-based image processing efficiently.
 
 ## License
 
 This project is licensed under the GNU AGPLv3 License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please submit issues or pull requests to help improve the project.

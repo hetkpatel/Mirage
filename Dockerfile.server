@@ -5,9 +5,7 @@ FROM python:3.12.7-slim-bookworm
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-ADD wsgi.py /app
-ADD embedding_models /app/embedding_models
-ADD tools /app/tools
+ADD src /app
 ADD .env /app
 ADD requirements.txt /app
 
@@ -21,7 +19,7 @@ RUN pip install --no-cache-dir -U pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Define volume to be mounted
-VOLUME /app/DRIVE /app/backup /app/logs
+VOLUME /mirage/DRIVE /mirage/backup /mirage/logs
 
 # Make port available to the world outside this container
 EXPOSE 5000

@@ -4,16 +4,16 @@ networks:
 
 services:
   mirage-server:
-    image: mirage-server
+    build:
+      context: .
+      dockerfile: Dockerfile.server
     container_name: mirage-server
-    environment:
-      - WORKING_DIRECTORY=/app
     ports:
-      - 5000:5000
+      - ${PORT}:5000
     volumes:
-      - ${DRIVE_LOCATION}:/app/DRIVE
-      - ./container/backup/:/app/backup
-      - ./container/logs/:/app/logs
+      - ${DRIVE_LOCATION}:/mirage/DRIVE
+      - ./container/backup/:/mirage/backup
+      - ./container/logs/:/mirage/logs
     depends_on:
       - ollama
     restart: unless-stopped
@@ -26,19 +26,18 @@ services:
     ports:
       - 11435:11434
     volumes:
-      - ollama:/root/.ollama
+      - ~/.ollama:/root/.ollama
     networks:
       - mirage_network
     restart: unless-stopped
 
   mirage-client:
-    image: mirage-client
-    container_name: mirage-client
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: mirage-web-client
     ports:
       - 80:80
     depends_on:
       - mirage-server
     restart: unless-stopped
-
-volumes:
-  ollama:

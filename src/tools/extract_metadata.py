@@ -1,9 +1,14 @@
 import exiftool
 import requests
 from datetime import datetime
+from mirage_logger import ProcessingLoggerSingleton
 
 
 def get_metadata(id_file_path: str, org_filename: str, ollama_host: str) -> dict:
+    logger = ProcessingLoggerSingleton().get_logger()
+    logger.info(f"Getting metadata for {org_filename}.")
+    logger.info(f"ID: {id_file_path}.")
+
     def is_valid_date_format(date_string):
         try:
             datetime.strptime(date_string, "%Y:%m:%d")
@@ -100,7 +105,7 @@ def get_metadata(id_file_path: str, org_filename: str, ollama_host: str) -> dict
             response = requests.post(
                 f"http://{ollama_host}:11434/api/generate",
                 json={
-                    "model": "Gemma2-MDE",
+                    "model": "mirage-date-extractor",
                     "stream": False,
                     "prompt": org_filename,
                 },
