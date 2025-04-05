@@ -26,18 +26,19 @@ services:
     ports:
       - 11435:11434
     volumes:
-      - ~/.ollama:/root/.ollama
+      - ollama:/root/.ollama
     networks:
       - mirage_network
     restart: unless-stopped
 
   mirage-client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
+    image: mirage-web-client
     container_name: mirage-web-client
     ports:
       - 80:80
     depends_on:
       - mirage-server
     restart: unless-stopped
+
+volumes:
+  ollama:

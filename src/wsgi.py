@@ -1,11 +1,12 @@
 import io
 import json
-from mirage_logger import HostingLoggerSingleton, ProcessingLoggerSingleton
 import os
 import shutil
 import threading
 import uuid
 import requests as r
+import time
+from mirage_logger import HostingLoggerSingleton, ProcessingLoggerSingleton
 from datetime import datetime, timedelta
 import blurhash
 import ffmpeg
@@ -102,9 +103,40 @@ with open(TRASH_FILE, "r") as f:
     trash = json.load(f)
 processing.info("Loaded trash from JSON file.")
 
-# Set Ollama host
-ollama_host = "ollama"
+# Wait for the Ollama server to be ready
+while True:
+    try:
+        res = r.get("http://ollama:11434")
+        if res.status_code == 200:
+            processing.info("Ollama server is ready.")
+            break
+    except r.exceptions.ConnectionError:
+        pass
+    processing.info("Waiting for Ollama server to start... (15s)")
+    time.sleep(15)
 
+# Build model
+processing.info("Building mirage-date-extractor model...")
+res = r.post(
+    f"http://ollama:11434/api/create",
+    json={
+        "name": "mirage-date-extractor",
+        "from": "gemma2:2b",
+        "system": 'Given a file name, extract the date in the format of "YYYY:MM:DD". Only return the date and no other information or data. If the date cannot be extracted, return "null".',
+    },
+)
+if res.ok:
+    processing.info("Model built")
+else:
+    print(f"Failed to create model: {res.status_code}")
+    print(res.text)
+
+# Clean up
+processing.info("Cleaning up...")
+r.delete(
+    f"http://ollama:11434/api/delete",
+    json={"model": "gemma2:2b"},
+)
 
 # Import processing tools
 from tools.embedder import *
@@ -181,7 +213,6 @@ def process_media(pull_uploads: bool):
             metadata[os.path.basename(f)] = get_metadata(
                 id_file_path=f,
                 org_filename=filename_mapping[os.path.basename(f)],
-                ollama_host=ollama_host,
             )
 
             content_type = metadata[os.path.basename(f)]["MIMEType"]
@@ -227,7 +258,7 @@ def process_media(pull_uploads: bool):
     # Unload mirage-date-extractor model
     processing.info(f"Unload mirage-date-extractor model")
     r.post(
-        f"http://{ollama_host}:11434/api/generate",
+        f"http://ollama:11434/api/generate",
         json={"model": "mirage-date-extractor", "keep_alive": 0},
     )
 
@@ -528,6 +559,5 @@ def storage_usage():
 
 # Run app with HTTP
 if __name__ == "__main__":
-    ollama_host = "localhost"
     processing.info("Debug Flask server...")
     app.run(host="0.0.0.0", port=os.getenv("PORT"), debug=True)
