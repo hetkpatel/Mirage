@@ -191,7 +191,7 @@ def upload_file():
         }, 201
 
 
-# Route to process media files
+# Function to process media files
 def process_media(pull_uploads: bool):
     global pending, total, processing_similar_bool
     processing.info("STARTED PROCESSING MEDIA")
@@ -450,6 +450,8 @@ def list_files():
                     "url": url_for(
                         "download_file", unique_id=item[:32], _external=True
                     ),
+                    "width": metadata.get(id)["Width"],
+                    "height": metadata.get(id)["Height"],
                     "metadata": metadata.get(item),
                 }
                 for item in filename_mapping
@@ -494,6 +496,8 @@ def get_trash():
                     "id": id[:32],
                     "name": filename_mapping.get(id),
                     "url": url_for("download_file", unique_id=id[:32], _external=True),
+                    "width": metadata.get(id)["Width"],
+                    "height": metadata.get(id)["Height"],
                     "metadata": metadata.get(id),
                     "expiry": expiry,
                 }
@@ -555,9 +559,3 @@ def storage_usage():
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-# Run app with HTTP
-if __name__ == "__main__":
-    processing.info("Debug Flask server...")
-    app.run(host="0.0.0.0", port=os.getenv("PORT"), debug=True)
