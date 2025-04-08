@@ -98,7 +98,7 @@ def upload_file(file_path):
             f"http://{HOSTNAME}:{PORT}/upload",
             data=monitor,  # Pass the monitor as data
             headers={"Content-Type": monitor.content_type},
-            auth=HTTPBasicAuth("hetpatel", os.getenv("PASSWORD")),
+            auth=HTTPBasicAuth(os.getenv("USERNAME"), os.getenv("PASSWORD")),
         )
 
     # Check if the upload was successful
@@ -117,7 +117,7 @@ for file in tqdm(list_of_files, desc="Uploading", unit="files"):
 response = requests.request(
     "POST",
     f"http://{HOSTNAME}:{PORT}/start?pulluploads=true",
-    auth=HTTPBasicAuth("hetpatel", os.getenv("PASSWORD")),
+    auth=HTTPBasicAuth(os.getenv("USERNAME"), os.getenv("PASSWORD")),
 )
 
 print(response.status_code)
