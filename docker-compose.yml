@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.server
+    image: mirage-server:latest
     container_name: mirage-server
     ports:
       - ${PORT}:5000
@@ -20,7 +21,7 @@ services:
     image: ollama/ollama
     container_name: ollama
     ports:
-      - 11435:11434
+      - 127.0.0.1:11435:11434
     volumes:
       - ollama:/root/.ollama
     networks:
