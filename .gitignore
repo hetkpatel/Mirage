@@ -164,4 +164,3 @@ TEST/
 *.zip
 container/
 dev/
-update_metadata.py

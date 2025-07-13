@@ -1,3 +1,13 @@
+"""
+wsgi.py
+Author: Het Patel
+Version: 2025.05.28
+Description: This file contains the WSGI application for the Mirage server.
+It initializes the Flask app, sets up routes for file upload, download, and processing,
+and handles authentication. It also includes functionality for processing media files,
+generating thumbnails, and managing metadata. The application is designed to run in a Docker container.
+"""
+
 import io
 import json
 import os
