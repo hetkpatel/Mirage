@@ -460,8 +460,8 @@ def list_files():
                     "url": url_for(
                         "download_file", unique_id=item[:32], _external=True
                     ),
-                    "width": metadata.get(id)["Width"],
-                    "height": metadata.get(id)["Height"],
+                    "width": metadata.get(item)["Width"],
+                    "height": metadata.get(item)["Height"],
                     "metadata": metadata.get(item),
                 }
                 for item in filename_mapping

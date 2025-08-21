@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile.server
       tags:
-        - mirage-server:2025.05.28
-    image: mirage-server:2025.05.28
+        - mirage-server:2025.08.20
+    image: mirage-server:2025.08.20
     container_name: mirage-server
     ports:
       - ${PORT}:5000
