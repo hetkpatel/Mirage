@@ -1,6 +1,6 @@
 # ---------- Stage 1: build exiftool ----------
 FROM debian:bookworm-slim AS exiftool-build
-ARG EXIFTOOL_VERSION=13.34
+ARG EXIFTOOL_VERSION=13.38
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates perl make \
