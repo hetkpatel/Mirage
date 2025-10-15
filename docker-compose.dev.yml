@@ -1,3 +1,5 @@
+# docker compose -f docker-compose.dev.yml -p mirage-dev up --build -d
+
 services:
   mirage-server-dev:
     build:
