@@ -1,0 +1,50 @@
+services:
+  mirage-server-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev_server
+      tags:
+        - mirage-server-dev:latest
+    image: mirage-server-dev:latest
+    container_name: mirage-server-dev
+    ports:
+      - 4999:5000
+    environment:
+      - USERNAME=admin # Server login username
+      - PASSWORD=devpassword # Server login password [TODO: Create secure password]
+    volumes:
+      - ./src/:/app
+      - ${DRIVE_LOCATION}:/mirage/DRIVE
+      - ./container/backup/:/mirage/backup
+      - ./container/logs/:/mirage/logs
+    depends_on:
+      - ollama
+    networks:
+      - mirage_network
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - 11435:11434
+    volumes:
+      - ollama:/root/.ollama
+    networks:
+      - mirage_network
+    restart: unless-stopped
+
+  mirage-client:
+    image: ghcr.io/hetkpatel/mirage-web:latest
+    container_name: mirage-web
+    ports:
+      - 80:80
+    depends_on:
+      - mirage-server-dev
+    restart: unless-stopped
+
+networks:
+  mirage_network:
+    driver: bridge
+
+volumes:
+  ollama:
