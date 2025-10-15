@@ -1,0 +1,46 @@
+# ---------- Stage 1: build exiftool ----------
+FROM debian:trixie-slim AS exiftool-build
+ARG EXIFTOOL_VERSION=13.38
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates perl make \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL -o /tmp/exiftool.tar.gz https://exiftool.org/Image-ExifTool-${EXIFTOOL_VERSION}.tar.gz \
+    && tar -xzf /tmp/exiftool.tar.gz -C /tmp \
+    && cd /tmp/Image-ExifTool-${EXIFTOOL_VERSION} \
+    && perl Makefile.PL INSTALLMAN1DIR= \
+    && make test \
+    && make install DESTDIR=/tmp/exiftool-root
+# Result goes to /tmp/exiftool-root/usr/local/{bin,lib,share/...}
+
+# ---------- Stage 2: mirage dev app ----------
+FROM python:3.12.12-slim-trixie
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    perl ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy exiftool from the build stage
+COPY --from=exiftool-build /tmp/exiftool-root/usr/local/bin/exiftool /usr/local/bin/exiftool
+COPY --from=exiftool-build /tmp/exiftool-root/usr/local/lib/ /usr/local/lib/
+COPY --from=exiftool-build /tmp/exiftool-root/usr/local/share/perl/ /usr/local/share/perl/
+
+# Python deps
+COPY requirements.txt ./
+ENV PIP_ROOT_USER_ACTION=ignore
+RUN pip install --no-cache-dir -U pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# App code
+# Note: Source code is mounted from host in dev setup
+COPY .env ./
+
+VOLUME ["/mirage/DRIVE", "/mirage/backup", "/mirage/logs"]
+EXPOSE 5000
+ENV FLASK_APP=wsgi.py FLASK_RUN_HOST=0.0.0.0 FLASK_RUN_PORT=5000 FLASK_DEBUG=1
+
+# Set default command
+CMD ["flask", "run"]
