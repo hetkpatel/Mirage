@@ -301,7 +301,7 @@ def process_media(pull_uploads: bool):
 @app.route("/start", methods=["POST"])
 @auth.login_required
 def start_process():
-    pull_uploads = request.args.get("pulluploads", "false").lower() == "true"
+    pull_uploads = request.args.get("pull_uploads", "false").lower() == "true"
     processing.info(f"Received request to start process. pull_uploads={pull_uploads}")
 
     thread = threading.Thread(target=process_media, args=(pull_uploads,))
@@ -561,8 +561,8 @@ def storage_usage():
         return (
             jsonify(
                 {
-                    "filesystem_used_size": disk_usage.used,
-                    "filesystem_total_size": disk_usage.total,
+                    "used": disk_usage.used,
+                    "total": disk_usage.total,
                 }
             ),
             200,
