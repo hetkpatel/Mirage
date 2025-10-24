@@ -160,7 +160,7 @@ processing.info("READY")
 @app.route("/")
 def index():
     processing.info("Health check - Server is running.")
-    return "Server is running!", 200
+    return {"status": "Server is running!"}, 200
 
 
 # Route to upload files

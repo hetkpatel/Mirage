@@ -1,12 +1,12 @@
 # ---------- Stage 1: build exiftool ----------
 FROM debian:bookworm-slim AS exiftool-build
-ARG EXIFTOOL_VERSION=13.38
+ARG EXIFTOOL_VERSION=13.36
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates perl make \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL -o /tmp/exiftool.tar.gz https://exiftool.org/Image-ExifTool-${EXIFTOOL_VERSION}.tar.gz \
+RUN curl -fsSL -o /tmp/exiftool.tar.gz https://sourceforge.net/projects/exiftool/files/Image-ExifTool-${EXIFTOOL_VERSION}.tar.gz/download \
     && tar -xzf /tmp/exiftool.tar.gz -C /tmp \
     && cd /tmp/Image-ExifTool-${EXIFTOOL_VERSION} \
     && perl Makefile.PL INSTALLMAN1DIR= \

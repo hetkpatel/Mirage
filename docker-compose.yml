@@ -23,7 +23,7 @@ services:
     image: ollama/ollama
     container_name: ollama
     ports:
-      - 11435:11434
+      - 127.0.0.1:11435:11434
     volumes:
       - ollama:/root/.ollama
     networks:
